@@ -1,0 +1,7 @@
+#mysql config
+mysql_dns: root:root@tcp(127.0.0.1:3307)/uchat?parseTime=true&charset=utf8mb4,utf8&loc=Asia%2FShanghai
+table_prefix: demo
+
+#uchat config
+merchant_no: 201705311010001
+merchant_secret: 123123
