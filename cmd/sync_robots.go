@@ -24,15 +24,15 @@ import (
 	"log"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/lvzhihao/uchat/models"
+	"github.com/lvzhihao/uchat/uchat"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// migrateCmd represents the migrate command
-var migrateCmd = &cobra.Command{
-	Use:   "migrate",
+// sync_robotsCmd represents the sync_robots command
+var sync_robotsCmd = &cobra.Command{
+	Use:   "sync_robots",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -49,49 +49,40 @@ to quickly create a Cobra application.`,
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
-		err = db.AutoMigrate(&models.Robot{}).Error
+		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
+		if err := uchat.SyncRobots(client, db); err == nil {
+			log.Println("robots sync success")
+		} else {
+			log.Fatal(err)
+		}
+
+		var robots []models.Robot
+		err = db.Find(&robots).Error
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = db.AutoMigrate(&models.MyRobot{}).Error
-		if err != nil {
-			log.Fatal(err)
+		for _, robot := range robots {
+			err := uchat.SyncRobotChatRooms(robot.SerialNo, client, db)
+			if err != nil {
+				log.Fatal(err)
+			} else {
+				log.Printf("chatromms sync success: %s\n", robot.SerialNo)
+			}
 		}
-		err = db.AutoMigrate(&models.ChatRoom{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.RobotChatRoom{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.Model(&models.RobotChatRoom{}).AddUniqueIndex("idx_robot_no_chat_no", "robot_serial_no", "chat_room_serial_no").Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.ChatRoomCmd{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.Model(&models.ChatRoomCmd{}).AddUniqueIndex("idx_chat_no_cmd", "chat_room_serial_no", "cmd").Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("migrate success")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(migrateCmd)
+	RootCmd.AddCommand(sync_robotsCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// migrateCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// sync_robotsCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// migrateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// sync_robotsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
