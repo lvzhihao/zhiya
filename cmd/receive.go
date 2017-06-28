@@ -21,18 +21,32 @@
 package cmd
 
 import (
-	"log"
+	"net/http"
 
-	"github.com/jinzhu/gorm"
-	"github.com/lvzhihao/uchat/models"
+	"github.com/labstack/echo"
+	"github.com/labstack/gommon/log"
+	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchat/uchat"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-// sync_robotsCmd represents the sync_robots command
-var sync_robotsCmd = &cobra.Command{
-	Use:   "sync_robots",
+var receiveActConfig = map[string]string{
+	"member_info":    uchat.ReceiveMQMemberList,
+	"member_new":     uchat.ReceiveMQMemberJoin,
+	"member_quit":    uchat.ReceiveMQMemberQuit,
+	"robot_roomlist": uchat.ReceiveMQRobotChatList,
+	"keyword":        uchat.ReceiveMQChatKeyword,
+	"group_new":      uchat.ReceiveMQChatCreate,
+	"group_msg":      uchat.ReceiveMQChatMessage,
+	"robot_ingroup":  uchat.ReceiveMQRobotJoinChat,
+	"saysum":         uchat.ReceiveMQMemberMessageSum,
+	"msg":            uchat.ReceiveMQRobotPrivateMessage,
+	"readpack":       uchat.ReceiveMQChatRedpack,
+}
+
+// receiveCmd represents the receive command
+var receiveCmd = &cobra.Command{
+	Use:   "receive",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -41,48 +55,36 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := gorm.Open("mysql", viper.GetString("mysql_dns"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer db.Close()
-		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-			return viper.GetString("table_prefix") + "_" + defaultTableName
-		}
-		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
-		if err := uchat.SyncRobots(client, db); err == nil {
-			log.Println("robots sync success")
-		} else {
-			log.Fatal(err)
-		}
-
-		var robots []models.Robot
-		err = db.Find(&robots).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, robot := range robots {
-			err := uchat.SyncRobotChatRooms(robot.SerialNo, client, db)
-			if err != nil {
-				log.Fatal(err)
+		// TODO: Work your own magic here
+		app := goutils.NewEcho()
+		app.Logger.SetLevel(log.INFO)
+		app.Any("/*", func(ctx echo.Context) error {
+			act := ctx.QueryParam("act")
+			if mqRoute, ok := receiveActConfig[act]; ok {
+				str := ctx.FormValue("strContext")
+				sign := ctx.FormValue("strSign")
+				ctx.Logger().Info(mqRoute, str, sign)
+				return ctx.HTML(http.StatusOK, "SUCCESS")
 			} else {
-				log.Printf("chatromms sync success: %s\n", robot.SerialNo)
+				ctx.Logger().Errorf("Unknow Action: '%s'", act)
+				return ctx.HTML(http.StatusOK, "SUCCESS")
 			}
-		}
+		})
+		goutils.EchoStartWithGracefulShutdown(app, ":8099")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(sync_robotsCmd)
+	RootCmd.AddCommand(receiveCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// sync_robotsCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// receiveCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// sync_robotsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// receiveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }

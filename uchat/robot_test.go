@@ -52,15 +52,15 @@ func Test_003_ChatRoomList(t *testing.T) {
 }
 
 func Test_004_ChatRoomUserInfo(t *testing.T) {
-	//for _, v := range testChatRooms {
-	ctx := make(map[string]string, 0)
-	//ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
-	ctx["vcChatRoomSerialNo"] = "201706141050000018"
-	err := testClient.ChatRoomUserInfo(ctx)
-	if err != nil {
-		t.Error(err)
-	} else {
-		t.Log("success")
+	for _, v := range testChatRooms {
+		ctx := make(map[string]string, 0)
+		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
+		//ctx["vcChatRoomSerialNo"] = "201706141050000018"
+		err := testClient.ChatRoomUserInfo(ctx)
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log("success")
+		}
 	}
-	//}
 }

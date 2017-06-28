@@ -60,3 +60,12 @@ func parseVersion(version string, width int) int64 {
 		return rst
 	}
 }
+
+func InStringSlice(slice []string, s string) bool {
+	for _, v := range slice {
+		if strings.Compare(v, s) == 0 {
+			return true
+		}
+	}
+	return false
+}

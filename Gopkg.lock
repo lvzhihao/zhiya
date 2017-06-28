@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/lvzhihao/goutils"
   packages = ["."]
-  revision = "40546424a300f0da3b51dc7c5f8d3218fae6c7cc"
+  revision = "45ca64766d51e1d89058b82b1ef1cb996457143b"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -190,6 +190,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3d269381bf6b01404b382e304740af081de8702ee909afbad1fe6ac3a18191f5"
+  inputs-digest = "d94dcf238655ff2958f9f436bc8f53df5f907d31dcd7ac03fc7cad07f8588b02"
   solver-name = "gps-cdcl"
   solver-version = 1
