@@ -11,10 +11,6 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-
-	"github.com/jinzhu/gorm"
-	"github.com/lvzhihao/goutils"
-	"github.com/lvzhihao/uchat/models"
 )
 
 type UchatClient struct {
@@ -151,49 +147,4 @@ func (c *UchatClient) ChatRoomUserInfo(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomUserInfo", ctx)
 	return err
-}
-
-func SyncRobots(client *UchatClient, db *gorm.DB) error {
-	rst, err := client.RobotList()
-	if err != nil {
-		return err
-	}
-	for _, v := range rst {
-		robot := models.Robot{
-			SerialNo:       v["vcSerialNo"],
-			ChatRoomCount:  goutils.ToInt(v["nChatRoomCount"]),
-			NickName:       v["vcNickName"],
-			Base64NickName: v["vcBase64NickName"],
-			HeadImages:     v["vcHeadImages"],
-			CodeImages:     v["vcCodeImages"],
-			Status:         int32(goutils.ToInt(v["nStatus"])),
-		}
-		err := db.Where(models.Robot{SerialNo: v["vcSerialNo"]}).Assign(robot).FirstOrCreate(&robot).Error
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) error {
-	ctx := make(map[string]string, 0)
-	ctx["vcRobotSerialNo"] = RobotSerialNo
-	rst, err := client.ChatRoomList(ctx)
-	if err != nil {
-		return err
-	}
-	for _, v := range rst {
-		room := models.ChatRoom{
-			ChatRoomSerialNo: v["vcChatRoomSerialNo"],
-			WxUserSerialNo:   v["vcWxUserSerialNo"],
-			Name:             v["vcName"],
-			Base64Name:       v["vcBase64Name"],
-		}
-		err := db.Where(models.ChatRoom{ChatRoomSerialNo: v["vcChatRoomSerialNo"]}).Assign(room).FirstOrCreate(&room).Error
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

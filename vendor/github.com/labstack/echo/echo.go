@@ -212,7 +212,7 @@ const (
 )
 
 const (
-	version = "3.1.0"
+	version = "3.2.1"
 	website = "https://echo.labstack.com"
 	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=Echo
 	banner = `
@@ -657,7 +657,7 @@ func NewHTTPError(code int, message ...interface{}) *HTTPError {
 
 // Error makes it compatible with `error` interface.
 func (he *HTTPError) Error() string {
-	return fmt.Sprintf("code=%d, message=%s", he.Code, he.Message)
+	return fmt.Sprintf("code=%d, message=%v", he.Code, he.Message)
 }
 
 // WrapHandler wraps `http.Handler` into `echo.HandlerFunc`.
