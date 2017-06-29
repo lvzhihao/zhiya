@@ -134,6 +134,12 @@
   revision = "c1de95864d73a5465492829d7cb2dd422b19ac96"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  revision = "27859d32540aebd2e5befa52dc59ae8e6a0132b6"
+
+[[projects]]
   name = "github.com/tylerb/graceful"
   packages = ["."]
   revision = "4654dfbb6ad53cb5e27f37d99b02e16c1872fbbb"
@@ -190,6 +196,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d94dcf238655ff2958f9f436bc8f53df5f907d31dcd7ac03fc7cad07f8588b02"
+  inputs-digest = "99f24c8c4badef6f649a85581ad1d08a74b75e89ce73ebb571b744a63f5169ea"
   solver-name = "gps-cdcl"
   solver-version = 1
