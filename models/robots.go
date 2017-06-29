@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -61,4 +63,17 @@ type ChatRoomCmd struct {
 	gorm.Model
 	ChatRoomSerialNo string `gorm:"size:100" json:"chat_room_serial_no"` //serialNo keyword index
 	Cmd              string `gorm:"size:50" json:"cmd"`
+}
+
+type ChatRoomMember struct {
+	ChatRoomSerialNo     string    `gorm:"size:100" json:"chat_room_serial_no"`
+	WxUserSerialNo       string    `gorm:"size:100" json:"wx_user_serial_no"`
+	NickName             string    `gorm:"size:255" json:"nick_name"`
+	Base64NickName       string    `gorm:"size:500" json:"base64_nick_name"`
+	HeadImages           string    `gorm:"size:2000" json:"head_images"`
+	JoinChatRoomType     int32     `gorm:"index:idx_join_chat_room_type" json:"join_chat_roome_type"`
+	FatherWxUserSerialNo string    `gorm:"size:100" json:"father_wx_user_serial_no"`
+	MsgCount             int32     `gorm:index:idx_message_count" json:"msg_count"`
+	LastMsgDate          time.Time `json:"last_msg_date"`
+	JoinDate             time.Time `json:"join_date"`
 }

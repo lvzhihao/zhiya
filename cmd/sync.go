@@ -85,9 +85,23 @@ to quickly create a Cobra application.`,
 					sugar.Infof("chatromms sync success: %s\n", robot.SerialNo)
 				}
 			}
-		case "user":
+		case "member":
+			var err error
+			var objs []models.ChatRoom
+			err = db.Find(&objs).Error
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			for _, chat := range objs {
+				err := uchat.SyncChatRoomMembers(chat.ChatRoomSerialNo, client)
+				if err != nil {
+					sugar.Fatal(err)
+				} else {
+					sugar.Infof("members sync success: %s\n", chat.ChatRoomSerialNo)
+				}
+			}
 		default:
-			sugar.Warn("only support obot/chat/user")
+			sugar.Warn("only support robot/chat/member")
 		}
 	},
 }
@@ -99,7 +113,7 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	//syncCmd.PersistentFlags().String("action", "", "数据同步[robots/chatroom/users]")
+	//syncCmd.PersistentFlags().String("action", "", "数据同步[robot/chat/member]")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
