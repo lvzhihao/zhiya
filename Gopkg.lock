@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/lvzhihao/goutils"
   packages = ["."]
-  revision = "45ca64766d51e1d89058b82b1ef1cb996457143b"
+  revision = "9d6242e0973045efc426544ab6b691f0ec855e4d"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -113,7 +113,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "4d647c8944eb42504a714e57e97f244ed6344722"
+  revision = "8c6fa02d2225de0f9bdcb7ca912556f68d172d8c"
 
 [[projects]]
   branch = "master"
@@ -173,7 +173,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["acme","acme/autocert"]
-  revision = "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d"
+  revision = "5ef0053f77724838734b6945dd364d3847e5de1d"
 
 [[projects]]
   branch = "master"

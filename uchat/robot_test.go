@@ -2,6 +2,8 @@ package uchat
 
 import (
 	"testing"
+
+	"github.com/lvzhihao/goutils"
 )
 
 var testClient *UchatClient
@@ -18,7 +20,15 @@ func Test_001_RobotList(t *testing.T) {
 		t.Error(err)
 	} else {
 		t.Log(rst)
-		testRobot = rst[0]
+		var begin int32 = 0
+		//find most chats to testing
+		for _, v := range rst {
+			count := goutils.ToInt32(v["nChatRoomCount"])
+			if count > begin {
+				begin = count
+				testRobot = v
+			}
+		}
 	}
 }
 

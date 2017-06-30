@@ -42,7 +42,7 @@ func (c *ChatRoom) Upsert(db *gorm.DB) error {
 
 type RobotChatRoom struct {
 	gorm.Model
-	RobotSerialNo    string `gorm:"size:100" json:"serial_no"` //robotNo chatNo index
+	RobotSerialNo    string `gorm:"size:100" json:"robot_serial_no"` //robotNo chatNo index
 	ChatRoomSerialNo string `gorm:"size:100" json:"chat_room_serial_no"`
 	IsOpen           bool   `gorm:"index:idx_is_open" json:"is_open"`
 }
@@ -66,6 +66,7 @@ type ChatRoomCmd struct {
 }
 
 type ChatRoomMember struct {
+	gorm.Model
 	ChatRoomSerialNo     string    `gorm:"size:100" json:"chat_room_serial_no"`
 	WxUserSerialNo       string    `gorm:"size:100" json:"wx_user_serial_no"`
 	NickName             string    `gorm:"size:255" json:"nick_name"`
@@ -76,4 +77,5 @@ type ChatRoomMember struct {
 	MsgCount             int32     `gorm:index:idx_message_count" json:"msg_count"`
 	LastMsgDate          time.Time `json:"last_msg_date"`
 	JoinDate             time.Time `json:"join_date"`
+	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`
 }

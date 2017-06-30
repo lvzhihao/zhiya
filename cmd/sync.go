@@ -88,7 +88,11 @@ to quickly create a Cobra application.`,
 		case "member":
 			var err error
 			var objs []models.ChatRoom
-			err = db.Find(&objs).Error
+			if chats, _ := cmd.Flags().GetString("chats"); chats != "" {
+				err = db.Where("chat_room_serial_no in (?)", strings.Split(chats, ",")).Find(&objs).Error
+			} else {
+				err = db.Find(&objs).Error
+			}
 			if err != nil {
 				sugar.Fatal(err)
 			}
@@ -120,5 +124,5 @@ func init() {
 	// syncCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	syncCmd.Flags().String("action", "", "数据同步[robot/chat/user]")
 	syncCmd.Flags().String("robots", "", "同步设备关联，多个设备请用半角逗号分隔")
-
+	syncCmd.Flags().String("chats", "", "同步群关联，多个群请用半角逗号分隔")
 }

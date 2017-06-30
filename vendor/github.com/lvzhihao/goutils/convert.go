@@ -42,12 +42,20 @@ func ToString(v interface{}) (s string) {
 	return
 }
 
+func ToInt32(v interface{}) int32 {
+	return int32(ToInt(v))
+}
+
+func ToInt64(v interface{}) int64 {
+	return ToInt(v)
+}
+
 func ToInt(v interface{}) int64 {
-	i, err := strconv.Atoi(ToString(v))
+	i, err := strconv.ParseInt(ToString(v), 10, 64)
 	if err != nil {
 		return 0
 	} else {
-		return int64(i)
+		return i
 	}
 }
 

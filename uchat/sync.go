@@ -1,6 +1,10 @@
 package uchat
 
 import (
+	"encoding/json"
+	"errors"
+	"log"
+
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchat/models"
@@ -36,6 +40,35 @@ func SyncChatRoomMembers(chatRoomSerialNo string, client *UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	return client.ChatRoomUserInfo(ctx)
+}
+
+type ChatRoomMembersList struct {
+	ChatRoomUserData []map[string]string
+}
+
+// support retry
+func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	chatRoomSerialNo, ok := rst["vcChatRoomSerialNo"]
+	if !ok {
+		return errors.New("empty vcChatRoomSerialNo")
+	}
+	chatRoomSerialNo = goutils.ToString(chatRoomSerialNo)
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list ChatRoomMembersList
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	log.Println(list)
+	return nil
 }
 
 // support retry
