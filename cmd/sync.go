@@ -28,7 +28,6 @@ import (
 	"github.com/lvzhihao/uchat/uchat"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 // syncCmd represents the sync command
@@ -42,9 +41,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger, _ := zap.NewProduction()
-		defer logger.Sync() // flushes buffer, if any
-		sugar := logger.Sugar()
+		defer Logger.Sync()
+		sugar := Logger.Sugar()
 		action, err := cmd.Flags().GetString("action")
 		if err != nil {
 			sugar.Fatal(err)

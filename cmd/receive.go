@@ -26,8 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/labstack/echo"
-	"github.com/labstack/gommon/log"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchat/uchat"
 	"github.com/spf13/cobra"
@@ -66,26 +67,27 @@ var receiveActConfig = map[string]string{
 }
 
 type receiveTool struct {
-	conn     *amqp.Connection
-	kind     string
 	channels map[string]*receiveChannel
-	//todo reconnect
 }
 
-func (c *receiveTool) Link() error {
+func NewTool(url string) (*receiveTool, error) {
+	tool := &receiveTool{
+		channels: make(map[string]*receiveChannel, 0),
+	}
+	err := tool.conn(url)
+	return tool, err
+}
+
+func (c *receiveTool) conn(url string) error {
+	_, err := amqp.Dial(url)
+	if err != nil {
+		return err
+	} //test link
 	for _, route := range receiveActConfig {
-		channel, err := c.conn.Channel()
-		if err != nil {
-			return err
-		}
-		err = channel.ExchangeDeclare(viper.GetString("rabbitmq_exchange_name"), c.kind, true, false, false, false, nil)
-		if err != nil {
-			return err
-		}
 		c.channels[route] = &receiveChannel{
-			mq_channel: channel,
-			routeKey:   route,
-			Channel:    make(chan string),
+			amqpUrl:  url,
+			routeKey: route,
+			Channel:  make(chan string, 2000),
 		}
 		go c.channels[route].Receive()
 	}
@@ -97,16 +99,36 @@ func (c *receiveTool) Publish(route, msg string) {
 }
 
 type receiveChannel struct {
-	mq_channel *amqp.Channel
-	routeKey   string
-	Channel    chan string
+	amqpUrl  string
+	routeKey string
+	Channel  chan string
 }
 
 func (c *receiveChannel) Receive() {
 	for {
+		conn, err := amqp.Dial(c.amqpUrl)
+		if err != nil {
+			Logger.Error("Channel Connection Error 1", zap.String("route", c.routeKey), zap.Error(err))
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		defer conn.Close()
+		channel, err := conn.Channel()
+		if err != nil {
+			Logger.Error("Channel Connection Error 2", zap.String("route", c.routeKey), zap.Error(err))
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		err = channel.ExchangeDeclare(viper.GetString("rabbitmq_exchange_name"), "topic", true, false, false, false, nil)
+		if err != nil {
+			Logger.Error("Channel Connection Error 3", zap.String("route", c.routeKey), zap.Error(err))
+			time.Sleep(3 * time.Second)
+			continue
+		}
 		select {
 		case str := <-c.Channel:
 			if str == "quit" {
+				Logger.Info("Channel Connection Quit", zap.String("route", c.routeKey))
 				return
 			} //quit
 			msg := amqp.Publishing{
@@ -115,7 +137,13 @@ func (c *receiveChannel) Receive() {
 				ContentType:  "application/json",
 				Body:         []byte(str),
 			}
-			c.mq_channel.Publish(viper.GetString("rabbitmq_exchange_name"), c.routeKey, false, false, msg)
+			err := channel.Publish(viper.GetString("rabbitmq_exchange_name"), c.routeKey, false, false, msg)
+			if err != nil {
+				c.Channel <- str
+				conn.Close()
+				Logger.Error("Channel Connection Error 4", zap.String("route", c.routeKey), zap.Error(err))
+				break
+			}
 		}
 	}
 }
@@ -131,22 +159,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		defer Logger.Sync()
 		app := goutils.NewEcho()
-		app.Logger.SetLevel(log.INFO)
+		//app.Logger.SetLevel(log.INFO)
 		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
-		conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s/%s", viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"), viper.GetString("rabbitmq_host"), viper.GetString("rabbitmq_vhost")))
+		tool, err := NewTool(fmt.Sprintf("amqp://%s:%s@%s/%s", viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"), viper.GetString("rabbitmq_host"), viper.GetString("rabbitmq_vhost")))
 		if err != nil {
-			app.Logger.Fatal(err)
-		}
-		defer conn.Close()
-		tool := &receiveTool{
-			conn:     conn,
-			kind:     "topic",
-			channels: make(map[string]*receiveChannel, 0),
-		}
-		err = tool.Link()
-		if err != nil {
-			app.Logger.Fatal(err)
+			Logger.Error("RabbitMQ Connect Error", zap.Error(err))
 		}
 		app.Any("/*", func(ctx echo.Context) error {
 			act := ctx.QueryParam("act")
@@ -154,12 +173,12 @@ to quickly create a Cobra application.`,
 				str := ctx.FormValue("strContext")
 				if strings.Compare(client.Sign(str), ctx.FormValue("strSign")) == 0 {
 					tool.Publish(mqRoute, str)
-					ctx.Logger().Debug(mqRoute, str)
+					Logger.Debug("Receive Message", zap.String("route", mqRoute), zap.String("message", str))
 				} else {
-					ctx.Logger().Errorf("Error sign")
+					Logger.Error("Error sign", zap.String("strSign", ctx.FormValue("strSign")), zap.String("checkSign", client.Sign(str)))
 				}
 			} else {
-				ctx.Logger().Errorf("Unknow Action: '%s'", act)
+				Logger.Error("Unknow Action", zap.String("action", act))
 			}
 			return ctx.HTML(http.StatusOK, "SUCCESS")
 		})

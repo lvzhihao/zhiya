@@ -91,14 +91,15 @@ to quickly create a Cobra application.`,
 		log.Println("db migrate success")
 
 		for k, v := range receiveQueueConfig {
-			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), k), bytes.NewBufferString(""))
+			client := &http.Client{}
+			b := bytes.NewBufferString("{\"auto_delete\":false,\"durable\":true,\"arguments\":[]}")
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), k), b)
 			if err != nil {
 				log.Fatal(err)
 			}
 			// enusre queue
 			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
 			req.Header.Add("Content-Type", "application/json")
-			client := &http.Client{}
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Fatal(err)
@@ -106,7 +107,7 @@ to quickly create a Cobra application.`,
 			if resp.StatusCode != http.StatusNoContent {
 				log.Fatal(resp)
 			}
-			b := bytes.NewBufferString("{\"routing_key\":\"" + v + "\",\"arguments\":[]}")
+			b = bytes.NewBufferString("{\"routing_key\":\"" + v + "\",\"arguments\":[]}")
 			// ensure binding
 			req, err = http.NewRequest("POST", fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_exchange_name"), k), b)
 			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))

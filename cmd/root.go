@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -54,7 +56,15 @@ func Execute() {
 	}
 }
 
+var (
+	Logger *zap.Logger
+)
+
 func init() {
+	// logger
+	Logger, _ = zap.NewProduction()
+	defer Logger.Sync() // flushes buffer, if any
+
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
