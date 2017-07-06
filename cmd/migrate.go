@@ -64,6 +64,10 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = db.AutoMigrate(&models.ChatRoomTag{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
 		err = db.AutoMigrate(&models.RobotChatRoom{}).Error
 		if err != nil {
 			log.Fatal(err)
@@ -72,11 +76,27 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = db.AutoMigrate(&models.CmdType{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
 		err = db.AutoMigrate(&models.ChatRoomCmd{}).Error
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = db.Model(&models.ChatRoomCmd{}).AddUniqueIndex("idx_chat_no_cmd", "chat_room_serial_no", "cmd").Error
+		err = db.AutoMigrate(&models.MyCmd{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = db.AutoMigrate(&models.SubCmd{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = db.AutoMigrate(&models.TagCmd{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = db.AutoMigrate(&models.MessageQueue{}).Error
 		if err != nil {
 			log.Fatal(err)
 		}

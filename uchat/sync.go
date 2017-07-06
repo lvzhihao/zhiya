@@ -1,9 +1,11 @@
 package uchat
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"log"
+	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
@@ -18,16 +20,19 @@ func SyncRobots(client *UchatClient, db *gorm.DB) error {
 	}
 	for _, v := range rst {
 		// ensure robot
-		robot := models.Robot{
-			SerialNo:       v["vcSerialNo"],
-			ChatRoomCount:  goutils.ToInt(v["nChatRoomCount"]),
-			NickName:       v["vcNickName"],
-			Base64NickName: v["vcBase64NickName"],
-			HeadImages:     v["vcHeadImages"],
-			CodeImages:     v["vcCodeImages"],
-			Status:         int32(goutils.ToInt(v["nStatus"])),
+		robot := models.Robot{}
+		err := robot.Ensure(db, v["vcSerialNo"])
+		if err != nil {
+			return err
 		}
-		err := robot.Upsert(db)
+		robot.ChatRoomCount = goutils.ToInt32(v["nChatRoomCount"])
+		nickNameB, _ := base64.StdEncoding.DecodeString(v["vcBase64NickName"])
+		robot.NickName = goutils.ToString(nickNameB)
+		robot.Base64NickName = v["vcBase64NickName"]
+		robot.HeadImages = v["vcHeadImages"]
+		robot.CodeImages = v["vcCodeImages"]
+		robot.Status = int32(goutils.ToInt(v["nStatus"]))
+		err = db.Save(&robot).Error
 		if err != nil {
 			return err
 		}
@@ -53,21 +58,60 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	chatRoomSerialNo, ok := rst["vcChatRoomSerialNo"]
+	_, ok := rst["vcChatRoomSerialNo"]
 	if !ok {
 		return errors.New("empty vcChatRoomSerialNo")
 	}
-	chatRoomSerialNo = goutils.ToString(chatRoomSerialNo)
+	chatRoomSerialNo := goutils.ToString(rst["vcChatRoomSerialNo"])
 	data, ok := rst["Data"]
 	if !ok {
 		return errors.New("empty Data")
 	}
 	var list ChatRoomMembersList
-	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	err = json.Unmarshal([]byte(strings.TrimRight(strings.TrimLeft(goutils.ToString(data), "["), "]")), &list)
 	if err != nil {
 		return err
 	}
-	log.Println(list)
+	var members []models.ChatRoomMember
+	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).Where("is_active = ?", true).Find(&members).Error
+	if err != nil {
+		return err
+	}
+	userSerialNos := make([]string, 0)
+	for _, v := range list.ChatRoomUserData {
+		// ensure chatroom
+		member := models.ChatRoomMember{}
+		err := member.Ensure(db, chatRoomSerialNo, goutils.ToString(v["vcSerialNo"]))
+		if err != nil {
+			return err
+		}
+		//member.NickName = goutils.ToString(v["vcNickName"])
+		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
+		member.NickName = goutils.ToString(nickNameB)
+		member.Base64NickName = goutils.ToString(v["vcBase64NickName"])
+		member.HeadImages = goutils.ToString(v["vcHeadImages"])
+		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
+		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
+		member.MsgCount = goutils.ToInt32(v["nMsgCount"])
+		member.IsActive = true
+		member.LastMsgDate, _ = time.Parse("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]))
+		member.JoinDate, _ = time.Parse("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]))
+		err = db.Save(&member).Error
+		if err != nil {
+			return err
+		}
+		// last status for this chatroome
+		userSerialNos = append(userSerialNos, member.WxUserSerialNo)
+	}
+	//set close history
+	for _, member := range members {
+		if goutils.InStringSlice(userSerialNos, member.WxUserSerialNo) == false {
+			err := member.Unactive(db)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -88,23 +132,27 @@ func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) 
 	rootSerialNos := make([]string, 0)
 	for _, v := range rst {
 		// ensure chatroom
-		room := models.ChatRoom{
-			ChatRoomSerialNo: v["vcChatRoomSerialNo"],
-			WxUserSerialNo:   v["vcWxUserSerialNo"],
-			Name:             v["vcName"],
-			Base64Name:       v["vcBase64Name"],
+		room := models.ChatRoom{}
+		err := room.Ensure(db, v["vcChatRoomSerialNo"])
+		if err != nil {
+			return err
 		}
-		err := room.Upsert(db)
+		room.WxUserSerialNo = v["vcWxUserSerialNo"]
+		nameB, _ := base64.StdEncoding.DecodeString(v["vcBase64Name"])
+		room.Name = goutils.ToString(nameB)
+		room.Base64Name = v["vcBase64Name"]
+		err = db.Save(&room).Error
 		if err != nil {
 			return err
 		}
 		// ensure robot chat link
-		robotRoom := models.RobotChatRoom{
-			RobotSerialNo:    RobotSerialNo,
-			ChatRoomSerialNo: v["vcChatRoomSerialNo"],
-			IsOpen:           true,
+		robotRoom := models.RobotChatRoom{}
+		err = robotRoom.Ensure(db, RobotSerialNo, v["vcChatRoomSerialNo"])
+		if err != nil {
+			return err
 		}
-		err = robotRoom.Upsert(db)
+		robotRoom.IsOpen = true
+		err = db.Save(&robotRoom).Error
 		if err != nil {
 			return err
 		}

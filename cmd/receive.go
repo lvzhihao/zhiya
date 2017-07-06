@@ -112,23 +112,25 @@ func (c *receiveChannel) Receive() {
 			time.Sleep(3 * time.Second)
 			continue
 		}
-		defer conn.Close()
 		channel, err := conn.Channel()
 		if err != nil {
 			Logger.Error("Channel Connection Error 2", zap.String("route", c.routeKey), zap.Error(err))
 			time.Sleep(3 * time.Second)
+			conn.Close()
 			continue
 		}
 		err = channel.ExchangeDeclare(viper.GetString("rabbitmq_exchange_name"), "topic", true, false, false, false, nil)
 		if err != nil {
 			Logger.Error("Channel Connection Error 3", zap.String("route", c.routeKey), zap.Error(err))
 			time.Sleep(3 * time.Second)
+			conn.Close()
 			continue
 		}
 		select {
 		case str := <-c.Channel:
 			if str == "quit" {
 				Logger.Info("Channel Connection Quit", zap.String("route", c.routeKey))
+				conn.Close()
 				return
 			} //quit
 			msg := amqp.Publishing{
@@ -185,27 +187,6 @@ to quickly create a Cobra application.`,
 		goutils.EchoStartWithGracefulShutdown(app, ":8099")
 	},
 }
-
-//func getConn() (*amqp.Connection, error) {
-/*
-	_, err = this.Conn.Channel()
-	if err != nil {
-		log.Printf("channel.open: %s", err)
-		return nil, err
-	}
-	this.Channel, _ = this.Conn.Channel()
-	if err := this.Channel.Qos(queueConf.PrefetchCount, 0, false); err != nil {
-		log.Printf("channel.qos: %s", err)
-		return nil, err
-	}
-	deliveries, err := this.Channel.Consume(queueConf.Queue, "logsticker", false, false, false, false, nil)
-	if err != nil {
-		log.Printf("base.consume: %v", err)
-		return deliveries, err
-	}
-	return deliveries, nil
-*/
-//}
 
 func init() {
 	RootCmd.AddCommand(receiveCmd)
