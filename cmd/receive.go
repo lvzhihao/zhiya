@@ -105,27 +105,29 @@ type receiveChannel struct {
 }
 
 func (c *receiveChannel) Receive() {
+RetryConnect:
+	conn, err := amqp.Dial(c.amqpUrl)
+	if err != nil {
+		Logger.Error("Channel Connection Error 1", zap.String("route", c.routeKey), zap.Error(err))
+		time.Sleep(3 * time.Second)
+		goto RetryConnect
+	}
+	channel, err := conn.Channel()
+	if err != nil {
+		Logger.Error("Channel Connection Error 2", zap.String("route", c.routeKey), zap.Error(err))
+		conn.Close()
+		time.Sleep(3 * time.Second)
+		goto RetryConnect
+	}
+	err = channel.ExchangeDeclare(viper.GetString("rabbitmq_exchange_name"), "topic", true, false, false, false, nil)
+	if err != nil {
+		Logger.Error("Channel Connection Error 3", zap.String("route", c.routeKey), zap.Error(err))
+		conn.Close()
+		time.Sleep(3 * time.Second)
+		goto RetryConnect
+	}
+BreakFor:
 	for {
-		conn, err := amqp.Dial(c.amqpUrl)
-		if err != nil {
-			Logger.Error("Channel Connection Error 1", zap.String("route", c.routeKey), zap.Error(err))
-			time.Sleep(3 * time.Second)
-			continue
-		}
-		channel, err := conn.Channel()
-		if err != nil {
-			Logger.Error("Channel Connection Error 2", zap.String("route", c.routeKey), zap.Error(err))
-			time.Sleep(3 * time.Second)
-			conn.Close()
-			continue
-		}
-		err = channel.ExchangeDeclare(viper.GetString("rabbitmq_exchange_name"), "topic", true, false, false, false, nil)
-		if err != nil {
-			Logger.Error("Channel Connection Error 3", zap.String("route", c.routeKey), zap.Error(err))
-			time.Sleep(3 * time.Second)
-			conn.Close()
-			continue
-		}
 		select {
 		case str := <-c.Channel:
 			if str == "quit" {
@@ -144,10 +146,11 @@ func (c *receiveChannel) Receive() {
 				c.Channel <- str
 				conn.Close()
 				Logger.Error("Channel Connection Error 4", zap.String("route", c.routeKey), zap.Error(err))
-				break
+				break BreakFor
 			}
 		}
 	}
+	goto RetryConnect
 }
 
 // receiveCmd represents the receive command

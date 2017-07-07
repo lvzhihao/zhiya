@@ -115,6 +115,62 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
+func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	_, ok := rst["vcRobotSerialNo"]
+	if !ok {
+		return errors.New("empty vcRobotSerialNo")
+	}
+	robotSerialNo := goutils.ToString(rst["vcRobotSerialNo"])
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	var robotRooms []models.RobotChatRoom
+	err = db.Where("robot_serial_no = ?", robotSerialNo).Where("is_open = ?", true).Find(&robotRooms).Error
+	if err != nil {
+		return err
+	}
+	rootSerialNos := make([]string, 0)
+	for _, v := range list {
+		if _, ok := v["vcChatRoomSerialNo"]; ok {
+			chatRoomSerialNo := goutils.ToString(v["vcChatRoomSerialNo"])
+			// ensure robot chat link
+			robotRoom := models.RobotChatRoom{}
+			err := robotRoom.Ensure(db, robotSerialNo, chatRoomSerialNo)
+			if err != nil {
+				return err
+			}
+			robotRoom.IsOpen = true
+			err = db.Save(&robotRoom).Error
+			if err != nil {
+				return err
+			}
+			// last status for this robot
+			rootSerialNos = append(rootSerialNos, robotRoom.ChatRoomSerialNo)
+		}
+	}
+	//set close history
+	for _, room := range robotRooms {
+		if goutils.InStringSlice(rootSerialNos, room.ChatRoomSerialNo) == false {
+			err := room.Close(db)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // support retry
 func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) error {
 	ctx := make(map[string]string, 0)
