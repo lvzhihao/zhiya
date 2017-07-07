@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,6 +33,23 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var InitCmdTypeValues = `
+	[
+		{
+			"type_flag": "member.join.welcome",
+			"type_name": "入群欢迎语"
+		},
+		{
+			"type_flag": "alimama.product.search",
+			"type_name": "淘客商品搜索"
+		},
+		{
+			"type_flag": "alimama.coupon.search",
+			"type_name": "淘客优惠搜索"
+		}
+	]
+`
 
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
@@ -79,6 +97,18 @@ to quickly create a Cobra application.`,
 		err = db.AutoMigrate(&models.CmdType{}).Error
 		if err != nil {
 			log.Fatal(err)
+		}
+		var initCmdType []models.CmdType
+		err = json.Unmarshal([]byte(InitCmdTypeValues), &initCmdType)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, v := range initCmdType {
+			err := v.Ensure(db, v.TypeFlag)
+			if err != nil {
+				log.Fatal(err)
+			}
+			db.Save(&v)
 		}
 		err = db.AutoMigrate(&models.ChatRoomCmd{}).Error
 		if err != nil {

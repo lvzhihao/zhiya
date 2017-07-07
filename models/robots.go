@@ -42,9 +42,11 @@ func (c *ChatRoom) Ensure(db *gorm.DB, chatRoomSerialNo string) error {
 
 type ChatRoomTag struct {
 	gorm.Model
-	TagId   string `gorm:size:100" json:"tag_id"`
-	TagName string `gorm:"size:200" json:"tag_name"`
-	Count   int32  `json:"count"`
+	TagId    string `gorm:size:100" json:"tag_id"`
+	TagName  string `gorm:"size:200" json:"tag_name"`
+	MyId     string `gorm:"size:100" json:"my_id"`
+	Count    int32  `json:"count"`
+	IsActive bool   `gorm:"index:idx_is_active" json:"is_active"`
 }
 
 type RobotChatRoom struct {
@@ -71,14 +73,18 @@ func (c *RobotChatRoom) Close(db *gorm.DB) error {
 
 type CmdType struct {
 	gorm.Model
+	TypeFlag string `gorm:"size:50;unique_index" json:"type_flag"` //定义标识，方便系统回调，命令进入回调队列
 	TypeName string `gorm:"size:50" json:"type_name"`
-	TypeFlag string `gorm:"size:100" json:"type_flag"` //定义标识，方便系统回调，命令进入回调队列
+}
+
+func (c *CmdType) Ensure(db *gorm.DB, typeFlag string) error {
+	return db.Where(CmdType{TypeFlag: typeFlag}).FirstOrInit(c).Error
 }
 
 type ChatRoomCmd struct {
 	gorm.Model
 	ChatRoomSerialNo string `gorm:"size:100" json:"chat_room_serial_no"`
-	CmdType          int32  `gorm:"index:idx_cmd_type" json:"cmd_type"`
+	CmdType          string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"`
 	CmdValue         string `gorm:"size:100" json:"cmd_value"`
 	CmdReply         string `gorm:"type:text(10000)" json:"cmd_reply"`
 	IsOpen           bool   `gorm:"index:idx_is_open" json:"is_open"`
@@ -87,7 +93,7 @@ type ChatRoomCmd struct {
 type MyCmd struct {
 	gorm.Model
 	MyId     string `gorm:"size:100" json:"my_id"`
-	CmdType  int32  `gorm:"index:idx_cmd_type" json:"cmd_type"`
+	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"`
 	CmdValue string `gorm:"size:100" json:"cmd_value"`
 	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`
 	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`
@@ -96,7 +102,7 @@ type MyCmd struct {
 type SubCmd struct {
 	gorm.Model
 	SubId    string `gorm:"size:100" json:"sub_id"`
-	CmdType  int32  `gorm:"index:idx_cmd_type" json:"cmd_type"`
+	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"`
 	CmdValue string `gorm:"size:100" json:"cmd_value"`
 	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`
 	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`
@@ -105,7 +111,7 @@ type SubCmd struct {
 type TagCmd struct {
 	gorm.Model
 	TagId    string `gorm:"size:100" json:"tag_id"`
-	CmdType  int32  `gorm:"index:idx_cmd_type" json:"cmd_type"`
+	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"`
 	CmdValue string `gorm:"size:100" json:"cmd_value"`
 	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`
 	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`
