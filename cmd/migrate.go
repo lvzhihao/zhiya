@@ -70,6 +70,10 @@ to quickly create a Cobra application.`,
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
+		err = db.AutoMigrate(&models.RobotApplyCode{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
 		err = db.AutoMigrate(&models.Robot{}).Error
 		if err != nil {
 			log.Fatal(err)

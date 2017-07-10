@@ -85,6 +85,7 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		if err != nil {
 			return err
 		}
+		loc, _ := time.LoadLocation("Asia/Shanghai")
 		//member.NickName = goutils.ToString(v["vcNickName"])
 		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
 		member.NickName = goutils.ToString(nickNameB)
@@ -94,8 +95,8 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
 		member.MsgCount = goutils.ToInt32(v["nMsgCount"])
 		member.IsActive = true
-		member.LastMsgDate, _ = time.Parse("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]))
-		member.JoinDate, _ = time.Parse("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]))
+		member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
+		member.JoinDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
 		err = db.Save(&member).Error
 		if err != nil {
 			return err
