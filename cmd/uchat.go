@@ -29,7 +29,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
-	"github.com/lvzhihao/uchat/uchat"
+	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"

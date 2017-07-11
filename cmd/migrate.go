@@ -29,7 +29,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/lvzhihao/uchat/models"
+	"github.com/lvzhihao/zhiya/models"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

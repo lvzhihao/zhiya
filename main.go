@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/lvzhihao/uchat/cmd"
+import "github.com/lvzhihao/zhiya/cmd"
 
 func main() {
 	cmd.Execute()

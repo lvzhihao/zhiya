@@ -10,8 +10,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
-	"github.com/lvzhihao/uchat/models"
-	"github.com/lvzhihao/uchat/uchat"
+	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/uchat"
 )
 
 var (

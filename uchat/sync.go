@@ -9,7 +9,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
-	"github.com/lvzhihao/uchat/models"
+	"github.com/lvzhihao/zhiya/models"
 )
 
 // support retry
