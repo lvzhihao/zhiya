@@ -13,11 +13,11 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-.uchat.yaml
+.zhiya.yaml
 
 *.swo
 *.swp
 *.swa
 
 main
-.uchat
+.zhiya
