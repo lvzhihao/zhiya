@@ -83,9 +83,8 @@ func FetchApplyCode(db *gorm.DB, myId, subId string) (*models.RobotApplyCode, er
 
 /*
 RUSTAPI ApplyCode
-```
-curl -vvv "http://host:prot/applycode" -X POST -d "my_id=xxx&sub_id=xxx"
-```
+
+`curl -vvv "http://host:prot/applycode" -X POST -d "my_id=xxx&sub_id=xxx"`
 */
 func ApplyCode(ctx echo.Context) error {
 	myId := ctx.FormValue("my_id")
