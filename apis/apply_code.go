@@ -82,9 +82,8 @@ func FetchApplyCode(db *gorm.DB, myId, subId string) (*models.RobotApplyCode, er
 }
 
 // RUSTAPI ApplyCode
-// method POST
-// Params my_id 供应商ID
-// Params sub_id 商户ID
+//
+// curl -vvv "/applycode" -d "my_id=xxx&sub_id=xxx"
 func ApplyCode(ctx echo.Context) error {
 	myId := ctx.FormValue("my_id")
 	subId := ctx.FormValue("sub_id")
