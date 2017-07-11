@@ -35,16 +35,11 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// receive_consumerCmd represents the receive_consumer command
-var receive_consumerCmd = &cobra.Command{
-	Use:   "receive_consumer",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+// uchatCmd represents the uchat command
+var uchatCmd = &cobra.Command{
+	Use:   "uchat",
+	Short: "小U机器人队列调用",
+	Long:  `根据队列名执行相应消费程序`,
 	Run: func(cmd *cobra.Command, args []string) {
 		defer Logger.Sync()
 		sugar := Logger.Sugar()
@@ -174,17 +169,17 @@ func (c *consumerShell) MemberMessageSum(msg amqp.Delivery) {
 }
 
 func init() {
-	RootCmd.AddCommand(receive_consumerCmd)
+	RootCmd.AddCommand(uchatCmd)
 
-	receive_consumerCmd.Flags().String("queue", "", "队列名称")
+	uchatCmd.Flags().String("queue", "", "队列名称")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// receive_consumerCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// uchatCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// receive_consumerCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// uchatCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
