@@ -1,27 +1,11 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/jinzhu/gorm"
 )
-
-type RobotApplyCode struct {
-	gorm.Model
-	RobotSerialNo    string    `gorm:"size:100;index:idx_robot_serial_no" json:"robot_serial_no"`
-	RobotNickName    string    `gorm:"size:200" json:"robot_nick_name"`
-	Type             string    `gorm:"size:20" json:"type"`
-	ChatRoomSerialNo string    `gorm:"size:100" json:"chat_room_serial_no"`
-	ExpireTime       time.Time `json:"expire_time"`
-	CodeSerialNo     string    `gorm:"size:100" json:"code_serial_no"`
-	CodeValue        string    `gorm:"size:20;index:idx_code_value" json:"code_value"`
-	CodeImages       string    `gorm:"size:500" json:"code_images"`
-	CodeTime         time.Time `json:"code_time"`
-	MyId             string    `gorm:"size:100;index:idx_my_id" json:"my_id"`
-	SubId            string    `gorm:"size:100;index:idx_my_id" json:"sub_id"`
-	Used             bool      `json:"used"`
-	UsedTime         time.Time `json:"used_time"`
-}
 
 type Robot struct {
 	gorm.Model
@@ -36,6 +20,28 @@ type Robot struct {
 
 func (c *Robot) Ensure(db *gorm.DB, serialNo string) error {
 	return db.Where(Robot{SerialNo: serialNo}).FirstOrInit(c).Error
+}
+
+func FindValidRobotByMyId(db *gorm.DB, myId string) (list []Robot, err error) {
+	var myRobots []MyRobot
+	err = db.Where("my_id = ?", myId).Find(&myRobots).Error
+	if err != nil {
+		return
+	}
+	var robotIds []string
+	for _, myRobot := range myRobots {
+		robotIds = append(robotIds, myRobot.RobotSerialNo)
+	}
+	if len(robotIds) == 0 {
+		err = errors.New("no valid robots")
+		return
+	}
+	err = db.Where("serial_no in (?)", robotIds).Where("chat_room_count < ?", 30).Find(&list).Error
+	if len(list) == 0 {
+		// 如果没有空的设备，同样返回错误
+		err = errors.New("no empty robots")
+	}
+	return
 }
 
 type MyRobot struct {
@@ -59,7 +65,7 @@ func (c *ChatRoom) Ensure(db *gorm.DB, chatRoomSerialNo string) error {
 
 type ChatRoomTag struct {
 	gorm.Model
-	TagId    string `gorm:size:100" json:"tag_id"`
+	TagId    string `gorm:"size:100" json:"tag_id"`
 	TagName  string `gorm:"size:200" json:"tag_name"`
 	MyId     string `gorm:"size:100" json:"my_id"`
 	Count    int32  `json:"count"`
@@ -146,7 +152,7 @@ type MessageQueue struct {
 	Title                string `gorm:"size:200" json:"title"`
 	Description          string `gorm:"size:500" json:"description"`
 	Href                 string `gorm:"size:500" json:"href"`
-	VoiceTime            int32  `json:voice_time"`
+	VoiceTime            int32  `json:"voice_time"`
 }
 
 type ChatRoomMember struct {
@@ -158,7 +164,7 @@ type ChatRoomMember struct {
 	HeadImages           string    `gorm:"size:500" json:"head_images"`
 	JoinChatRoomType     int32     `gorm:"index:idx_join_chat_room_type" json:"join_chat_roome_type"`
 	FatherWxUserSerialNo string    `gorm:"size:100" json:"father_wx_user_serial_no"`
-	MsgCount             int32     `gorm:index:idx_message_count" json:"msg_count"`
+	MsgCount             int32     `gorm:"index:idx_message_count" json:"msg_count"`
 	LastMsgDate          time.Time `json:"last_msg_date"`
 	JoinDate             time.Time `json:"join_date"`
 	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`

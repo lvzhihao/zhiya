@@ -227,3 +227,40 @@ func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) 
 	}
 	return nil
 }
+
+func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	_, ok := rst["vcChatRoomSerialNo"]
+	if !ok {
+		return errors.New("empty ChatRoomSerialNo")
+	}
+	chatRoomSerialNo := goutils.ToString(rst["vcChatRoomSerialNo"])
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	for _, v := range list {
+		lastMsgDate, _ := time.ParseInLocation("2006-01-02 15:04:05.999", goutils.ToString(v["dtLastMsgDate"]), loc)
+		err := db.Model(&models.ChatRoomMember{}).
+			Where("chat_room_serial_no = ?", chatRoomSerialNo).
+			Where("wx_user_serial_no = ?", goutils.ToString(v["vcWXSerialNo"])).
+			Updates(map[string]interface{}{
+				"msg_count":     goutils.ToInt32(v["nMsgCount"]),
+				"last_msg_date": lastMsgDate,
+			}).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

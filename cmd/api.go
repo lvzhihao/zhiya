@@ -21,14 +21,9 @@
 package cmd
 
 import (
-	"log"
-	"net/http"
-	"time"
-
 	"github.com/jinzhu/gorm"
-	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
-	"github.com/lvzhihao/uchat/models"
+	"github.com/lvzhihao/uchat/apis"
 	"github.com/lvzhihao/uchat/uchat"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -46,8 +41,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		defer Logger.Sync()
-		app := goutils.NewEcho()
 		//app.Logger.SetLevel(log.INFO)
+
+		app := goutils.NewEcho()
 		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 		/*
 			tool, err := NewTool(fmt.Sprintf("amqp://%s:%s@%s/%s", viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"), viper.GetString("rabbitmq_host"), viper.GetString("rabbitmq_vhost")))
@@ -57,75 +53,19 @@ to quickly create a Cobra application.`,
 		*/
 		db, err := gorm.Open("mysql", viper.GetString("mysql_dns"))
 		if err != nil {
-			log.Fatal(err)
+			Logger.Sugar().Fatal(err)
 		}
 		defer db.Close()
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
-		app.POST("/applycode", func(ctx echo.Context) error {
-			myId := ctx.FormValue("my_id")
-			if myId == "" {
-				return ctx.HTML(http.StatusOK, "Error my_id")
-			}
-			subId := ctx.QueryParam("sub_id")
-			var myRobots []models.MyRobot
-			err := db.Where("my_id = ?", myId).Find(&myRobots).Error
-			if err != nil {
-				return ctx.HTML(http.StatusOK, "Error"+err.Error())
-			}
-			var robotIds []string
-			for _, myRobot := range myRobots {
-				robotIds = append(robotIds, myRobot.RobotSerialNo)
-			}
-			if len(robotIds) == 0 {
-				return ctx.HTML(http.StatusOK, "Error robotIds")
-			}
-			var robots []models.Robot
-			err = db.Where("serial_no in (?)", robotIds).Where("chat_room_count < ?", 30).Find(&robots).Error
-			if err != nil {
-				return ctx.HTML(http.StatusOK, "Error"+err.Error())
-			}
-			if len(robots) == 0 {
-				return ctx.HTML(http.StatusOK, "Error robots")
-			}
-			//todo check subid chatroom limit
-			params := map[string]string{
-				"vcRobotSerialNo":    robots[0].SerialNo, //todo
-				"nType":              "10",
-				"vcChatRoomSerialNo": "",
-				"nCodeCount":         "1",
-				"nAddMinute":         "30", //暂定30分钟过期
-				"nIsNotify":          "0",
-				"vcNotifyContent":    "",
-			}
-			datas, err := client.ApplyCodeList(params)
-			if err != nil {
-				return ctx.HTML(http.StatusOK, "Error"+err.Error())
-			}
-			codeData := datas[0]
-			loc, _ := time.LoadLocation("Asia/Shanghai")
-			applyCode := &models.RobotApplyCode{}
-			applyCode.RobotSerialNo = codeData["vcRobotSerialNo"]
-			applyCode.RobotNickName = codeData["vcNickName"]
-			applyCode.Type = "10"
-			applyCode.ChatRoomSerialNo = codeData["vcChatRoomSerialNo"]
-			applyCode.ExpireTime, _ = time.ParseInLocation("2006/1/2 15:04:05", codeData["dtEndDate"], loc)
-			applyCode.CodeSerialNo = codeData["vcSerialNo"]
-			applyCode.CodeValue = codeData["vcCode"]
-			applyCode.CodeImages = codeData["vcCodeImages"]
-			applyCode.CodeTime, _ = time.ParseInLocation("2006/1/2 15:04:05", codeData["dtCreateDate"], loc)
-			applyCode.MyId = myId
-			applyCode.SubId = subId
-			applyCode.Used = false
-			err = db.Create(applyCode).Error
-			if err != nil {
-				return ctx.HTML(http.StatusOK, "Error"+err.Error())
-			}
-			return ctx.JSON(http.StatusOK, applyCode)
-		})
+		apis.Logger = Logger
+		apis.DB = db
+		apis.Client = client
+		// action
+		app.POST("/applycode", apis.ApplyCode)
+		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
-
 	},
 }
 

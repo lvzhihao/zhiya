@@ -67,6 +67,8 @@ to quickly create a Cobra application.`,
 			consumer.Consumer("uchat.member.list", 20, shell.MemberList)
 		case "uchat.robot.chat.list":
 			consumer.Consumer("uchat.robot.chat.list", 20, shell.ChatRoomList)
+		case "uchat.member.message_sum":
+			consumer.Consumer("uchat.member.message_sum", 20, shell.MemberMessageSum)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -158,10 +160,17 @@ func (c *consumerShell) MemberList(msg amqp.Delivery) {
 func (c *consumerShell) ChatRoomList(msg amqp.Delivery) {
 	err := uchat.SyncRobotChatRoomsCallback(msg.Body, c.db)
 	if err != nil {
-		Logger.Error("process error", zap.String("queue", "uchat.member.list"), zap.Error(err), zap.Any("msg", msg))
+		Logger.Error("process error", zap.String("queue", "uchat.robot.chat.list"), zap.Error(err), zap.Any("msg", msg))
 	}
 	msg.Ack(false)
-	//msg.Nack(false, true)
+}
+
+func (c *consumerShell) MemberMessageSum(msg amqp.Delivery) {
+	err := uchat.SyncMemberMessageSumCallback(msg.Body, c.db)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.member.message_sum"), zap.Error(err), zap.Any("msg", msg))
+	}
+	msg.Ack(false)
 }
 
 func init() {
