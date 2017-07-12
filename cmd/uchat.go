@@ -64,6 +64,8 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.robot.chat.list", 20, shell.ChatRoomList)
 		case "uchat.member.message_sum":
 			consumer.Consumer("uchat.member.message_sum", 20, shell.MemberMessageSum)
+		case "uchat.chat.create":
+			consumer.Consumer("uchat.chat.create", 20, shell.ChatRoomCreate)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -166,6 +168,17 @@ func (c *consumerShell) MemberMessageSum(msg amqp.Delivery) {
 		Logger.Error("process error", zap.String("queue", "uchat.member.message_sum"), zap.Error(err), zap.Any("msg", msg))
 	}
 	msg.Ack(false)
+}
+
+func (c *consumerShell) ChatRoomCreate(msg amqp.Delivery) {
+	err := uchat.SyncChatRoomCreateCallback(msg.Body, c.db)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.member.message_sum"), zap.Error(err), zap.Any("msg", msg))
+		msg.Nack(false, true)
+		//开通错误需要重试，不成功则需要人工干预，扔回队列
+	} else {
+		msg.Ack(false)
+	}
 }
 
 func init() {

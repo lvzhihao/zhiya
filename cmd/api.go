@@ -58,7 +58,7 @@ var apiCmd = &cobra.Command{
 		apis.DB = db
 		apis.Client = client
 		// action
-		app.POST("/applycode", apis.ApplyCode)
+		app.POST("/api/applycode", apis.ApplyCode)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},

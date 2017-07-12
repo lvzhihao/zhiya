@@ -21,6 +21,12 @@ var (
 	DefaultApplyCodeAddMinute string             = "10" //默认验证码有效时间
 )
 
+type Result struct {
+	Code  string      `json:"code"`
+	Error string      `json:"error"`
+	Data  interface{} `json:"data"`
+}
+
 func init() {
 	//todo
 }
@@ -45,7 +51,7 @@ func FetchApplyCode(db *gorm.DB, myId, subId string) (*models.RobotApplyCode, er
 	}
 
 	//随机选取一个机器人
-	numn := rand.Intn(len(robots) - 1)
+	numn := rand.Intn(len(robots))
 	params := map[string]string{
 		"vcRobotSerialNo":    robots[numn].SerialNo, //todo
 		"nType":              "10",
@@ -92,8 +98,14 @@ func ApplyCode(ctx echo.Context) error {
 
 	applyCode, err := FetchApplyCode(DB, myId, subId)
 	if err != nil {
-		return ctx.HTML(http.StatusOK, "Error"+err.Error())
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000001",
+			Error: err.Error(),
+		})
 	} else {
-		return ctx.JSON(http.StatusOK, applyCode)
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: applyCode,
+		})
 	}
 }

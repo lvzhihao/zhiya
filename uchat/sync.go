@@ -264,3 +264,55 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
 	}
 	return nil
 }
+
+func SyncChatRoomCreateCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	for _, v := range list {
+		applyCode, err := models.ApplyCodeUsed(db, goutils.ToString(v["vcApplyCodeSerialNo"]))
+		if err != nil {
+			return err
+		}
+		room := models.ChatRoom{}
+		chatRoomSerialNo := goutils.ToString(v["vcChatRoomSerialNo"])
+		err = room.Ensure(db, chatRoomSerialNo)
+		if err != nil {
+			return err
+		}
+		room.WxUserSerialNo = goutils.ToString(v["vcWxUserSerialNo"])
+		nameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64Name"]))
+		room.Name = goutils.ToString(nameB)
+		room.Base64Name = goutils.ToString(v["vcBase64Name"])
+		err = db.Save(&room).Error
+		if err != nil {
+			return err
+		}
+		robotSerialNo := goutils.ToString(v["vcRobotSerialNo"])
+		robotRoom := models.RobotChatRoom{}
+		err = robotRoom.Ensure(db, robotSerialNo, chatRoomSerialNo)
+		if err != nil {
+			return err
+		}
+		robotRoom.MyId = applyCode.MyId
+		robotRoom.SubId = applyCode.SubId
+		robotRoom.IsOpen = true
+		err = db.Save(&robotRoom).Error
+		//todo fetch members
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

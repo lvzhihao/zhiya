@@ -24,6 +24,19 @@ type RobotApplyCode struct {
 }
 
 func FindVaildApplyCodeByMyId(db *gorm.DB, myId, subId string) (list []RobotApplyCode, err error) {
-	err = db.Where("expire_time >= ?", time.Now()).Where("my_id = ?", myId).Where("sub_id = ?", subId).Order("expire_time desc").Find(&list).Error
+	err = db.Where("expire_time >= ?", time.Now()).Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("used = ?", 0).Order("expire_time desc").Find(&list).Error
+	return
+}
+
+func ApplyCodeUsed(db *gorm.DB, codeSerialNo string) (code RobotApplyCode, err error) {
+	err = db.Where("code_serial_no = ?", codeSerialNo).Find(&code).Error
+	if err != nil {
+		return
+	}
+	err = db.Model(&code).
+		Updates(map[string]interface{}{
+			"used":      true,
+			"used_time": time.Now(),
+		}).Error
 	return
 }
