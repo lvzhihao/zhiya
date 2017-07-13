@@ -89,6 +89,7 @@ BreakFor:
 		err := db.Where("send_type = 1").Where("send_status = 0").Order("id asc").Limit(100).Find(&msg1).Error
 		if err != nil {
 			Logger.Error("Load Message Error 1", zap.Error(err))
+			continue
 		}
 		var msg2 []models.MessageQueue
 		err = db.Where("send_type = 2").Where("send_status = 0").Where("send_time <= ?", time.Now()).Order("id asc").Limit(100).Find(&msg2).Error
@@ -98,50 +99,6 @@ BreakFor:
 		msg1 = append(msg1, msg2...)
 		for _, msg := range msg1 {
 			chatRooms := strings.Split(msg.ChatRoomSerialNoList, ",")
-			for _, chatRoom := range chatRooms {
-				chatRoom := strings.TrimSpace(chatRoom)
-				if chatRoom == "" {
-					continue
-				}
-				robotChatRoom, err := models.FindRobotChatRoomByChatRoom(db, chatRoom)
-				if err != nil {
-					Logger.Error("Load Message Error 3", zap.Error(err))
-					continue
-				}
-				rst := make(map[string]interface{}, 0)
-				rst["vcRelaSerialNo"] = msg.QueueId
-				rst["vcChatRoomSerialNo"] = chatRoom
-				rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
-				if msg.IsHit {
-					rst["nIsHit"] = "1"
-				} else {
-					rst["nIsHit"] = "0"
-				}
-				rst["vcWeixinSerialNo"] = msg.WeixinSerialNo
-				//优化
-				datas := make([]map[string]string, 0)
-				data := make(map[string]string, 0)
-				data["nMsgType"] = msg.MsgType
-				data["msgContent"] = msg.MsgContent
-				data["vcTitle"] = msg.Title
-				data["vcDesc"] = msg.Description
-				data["vcHref"] = msg.Href
-				data["nVoiceTime"] = goutils.ToString(msg.VoiceTime)
-				datas = append(datas, data)
-				rst["Data"] = datas
-				b, _ := json.Marshal(rst)
-				mqMsg := amqp.Publishing{
-					DeliveryMode: amqp.Persistent,
-					Timestamp:    time.Now(),
-					ContentType:  "application/json",
-					Body:         b,
-				}
-				err = channel.Publish(viper.GetString("rabbitmq_message_exchange_name"), "uchat.mysql.message.queue", false, false, mqMsg)
-				if err != nil {
-					Logger.Error("Channel Connection Error 4", zap.String("route", "uchat.mysql.message.queue"), zap.Error(err))
-					break BreakFor
-				}
-			}
 			msg.SendStatus = 1
 			msg.SendStatusTime = time.Now()
 			err := db.Save(&msg).Error
@@ -149,6 +106,51 @@ BreakFor:
 				Logger.Error("Load Message Error 4", zap.Error(err))
 			} else {
 				Logger.Info("Load Message Success", zap.Any("msg", msg))
+				for _, chatRoom := range chatRooms {
+					chatRoom := strings.TrimSpace(chatRoom)
+					if chatRoom == "" {
+						continue
+					}
+					robotChatRoom, err := models.FindRobotChatRoomByChatRoom(db, chatRoom)
+					if err != nil {
+						Logger.Error("Load Message Error 3", zap.Error(err))
+						continue
+					}
+					rst := make(map[string]interface{}, 0)
+					rst["vcRelaSerialNo"] = msg.QueueId
+					rst["vcChatRoomSerialNo"] = chatRoom
+					rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+					if msg.IsHit {
+						rst["nIsHit"] = "1"
+					} else {
+						rst["nIsHit"] = "0"
+					}
+					rst["vcWeixinSerialNo"] = msg.WeixinSerialNo
+					//优化
+					datas := make([]map[string]string, 0)
+					data := make(map[string]string, 0)
+					data["nMsgType"] = msg.MsgType
+					data["msgContent"] = msg.MsgContent
+					data["vcTitle"] = msg.Title
+					data["vcDesc"] = msg.Description
+					data["vcHref"] = msg.Href
+					data["nVoiceTime"] = goutils.ToString(msg.VoiceTime)
+					datas = append(datas, data)
+					rst["Data"] = datas
+					b, _ := json.Marshal(rst)
+					mqMsg := amqp.Publishing{
+						DeliveryMode: amqp.Persistent,
+						Timestamp:    time.Now(),
+						ContentType:  "application/json",
+						Body:         b,
+					}
+					err = channel.Publish(viper.GetString("rabbitmq_message_exchange_name"), "uchat.mysql.message.queue", false, false, mqMsg)
+					if err != nil {
+						Logger.Error("Channel Connection Error 4", zap.String("route", "uchat.mysql.message.queue"), zap.Error(err))
+						// retry
+						break BreakFor
+					}
+				}
 			}
 		}
 		time.Sleep(3 * time.Second)
