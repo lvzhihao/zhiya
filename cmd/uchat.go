@@ -158,6 +158,7 @@ func (c *consumerShell) MemberList(msg amqp.Delivery) {
 	err := uchat.SyncChatRoomMembersCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.list"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.member.list"), zap.Any("msg", msg))
 		msg.Ack(false)
@@ -169,6 +170,7 @@ func (c *consumerShell) ChatRoomList(msg amqp.Delivery) {
 	err := uchat.SyncRobotChatRoomsCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.robot.chat.list"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.robot.chat.list"), zap.Any("msg", msg))
 		msg.Ack(false)
@@ -179,6 +181,7 @@ func (c *consumerShell) MemberMessageSum(msg amqp.Delivery) {
 	err := uchat.SyncMemberMessageSumCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.message_sum"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.member.message_sum"), zap.Any("msg", msg))
 		msg.Ack(false)
@@ -201,6 +204,7 @@ func (c *consumerShell) MemberQuit(msg amqp.Delivery) {
 	err := uchat.SyncMemberQuitCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.quit"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.member.quit"), zap.Any("msg", msg))
 		msg.Ack(false)
@@ -211,6 +215,7 @@ func (c *consumerShell) MemberJoin(msg amqp.Delivery) {
 	err := uchat.SyncMemberJoinCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.join"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.member.join"), zap.Any("msg", msg))
 		msg.Ack(false)
