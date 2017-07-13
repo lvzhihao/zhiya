@@ -441,7 +441,7 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db 
 	hd := hashids.NewData()
 	hd.Salt = "test~~~llll"
 	hd.MinLength = 16
-	h, _ := hashids.NewWithData(hd)
+	h := hashids.NewWithData(hd)
 	message.QueueId, _ = h.Encode([]int{int(message.ID)})
 	return db.Save(message).Error
 }
