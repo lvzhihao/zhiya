@@ -10,6 +10,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
+	hashids "github.com/speps/go-hashids"
 )
 
 // support retry
@@ -38,6 +39,25 @@ func SyncRobots(client *UchatClient, db *gorm.DB) error {
 		}
 	}
 	return nil
+}
+
+func SetChatRoomOver(chatRoomSerialNo, comment string, client *UchatClient) error {
+	ctx := make(map[string]string, 0)
+	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
+	ctx["vcComment"] = comment
+	return client.ChatRoomOver(ctx)
+}
+
+func SetChatRoomOpenGetMessage(chatRoomSerialNo string, client *UchatClient) error {
+	ctx := make(map[string]string, 0)
+	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
+	return client.ChatRoomOpenGetMessages(ctx)
+}
+
+func SetChatRoomCloseGetMessage(chatRoomSerialNo string, client *UchatClient) error {
+	ctx := make(map[string]string, 0)
+	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
+	return client.ChatRoomCloseGetMessages(ctx)
 }
 
 // support retry
@@ -265,7 +285,7 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
-func SyncChatRoomCreateCallback(b []byte, db *gorm.DB) error {
+func SyncChatRoomCreateCallback(b []byte, client *UchatClient, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -309,10 +329,142 @@ func SyncChatRoomCreateCallback(b []byte, db *gorm.DB) error {
 		robotRoom.SubId = applyCode.SubId
 		robotRoom.IsOpen = true
 		err = db.Save(&robotRoom).Error
-		//todo fetch members
+		if err != nil {
+			return err
+		}
+		// sync member info
+		SyncChatRoomMembers(chatRoomSerialNo, client)
+		// open get message
+		SetChatRoomOpenGetMessage(chatRoomSerialNo, client)
+	}
+	return nil
+}
+
+func SyncMemberQuitCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	for _, v := range list {
+		quitDate, _ := time.ParseInLocation("2006-01-02T15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
+		err := db.Model(&models.ChatRoomMember{}).
+			Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).
+			Where("wx_user_serial_no = ?", goutils.ToString(v["vcWxUserSerialNo"])).
+			Updates(map[string]interface{}{
+				"quit_date": quitDate,
+				"is_active": false,
+			}).Error
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	for _, v := range list {
+		member := models.ChatRoomMember{}
+		err := member.Ensure(db, goutils.ToString(v["vcChatRoomSerialNo"]), goutils.ToString(v["vcWxUserSerialNo"]))
+		if err != nil {
+			return err
+		}
+		//member.NickName = goutils.ToString(v["vcNickName"])
+		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
+		member.NickName = goutils.ToString(nickNameB)
+		member.Base64NickName = goutils.ToString(v["vcBase64NickName"])
+		member.HeadImages = goutils.ToString(v["vcHeadImages"])
+		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
+		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
+		member.IsActive = true
+		member.JoinDate, _ = time.ParseInLocation("2006-01-02T15:04:05.999", goutils.ToString(v["dtCreateDate"]), loc)
+		err = db.Save(&member).Error
+		if err != nil {
+			return err
+		}
+		// send Message
+		SendChatRoomMemberTextMessage(member.ChatRoomSerialNo, member.WxUserSerialNo, "", db)
+	}
+	return nil
+}
+
+func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db *gorm.DB) error {
+	if msg == "" {
+		msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
+	}
+	if msg == "" {
+		return errors.New("no content")
+	}
+	message := &models.MessageQueue{}
+	message.ChatRoomSerialNoList = charRoomSerialNo
+	message.ChatRoomCount = 1
+	message.MsgType = "2001"
+	message.IsHit = true
+	if strings.Contains(msg, "@新成员名称") {
+		message.MsgContent = strings.Replace(msg, "@新成员名称", "", -1) //有问题这里
+		message.WeixinSerialNo = wxSerialNo
+	} else {
+		message.WeixinSerialNo = ""
+		message.MsgContent = msg
+	}
+	message.SendType = 1
+	message.SendStatus = 0
+	err := db.Create(message).Error
+	if err != nil {
+		return err
+	}
+	hd := hashids.NewData()
+	hd.Salt = "test~~~llll"
+	hd.MinLength = 16
+	h, _ := hashids.NewWithData(hd)
+	message.QueueId, _ = h.Encode([]int{int(message.ID)})
+	return db.Save(message).Error
+}
+
+func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string {
+	var chatRoomCmd models.ChatRoomCmd
+	db.Where("chat_room_serial_no = ?", charRoomSerialNo).Where("cmd_type = ?", "member.join.welcome").Where("is_open = ?", 1).First(&chatRoomCmd)
+	if chatRoomCmd.ID > 0 {
+		return chatRoomCmd.CmdReply
+	}
+	var robotChatRoom models.RobotChatRoom
+	db.Where("chat_room_serial_no = ?", charRoomSerialNo).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+	if robotChatRoom.ID > 0 {
+		var tagCmd models.TagCmd
+		db.Where("tag_id = ?", robotChatRoom.TagId).Where("cmd_type = ?", "member.join.welcome").Where("is_open = ?", 1).First(&tagCmd)
+		if tagCmd.ID > 0 {
+			return tagCmd.CmdReply
+		}
+		var myCmd models.MyCmd
+		db.Where("my_id = ?", robotChatRoom.MyId).Where("cmd_type = ?", "member.join.welcome").Where("is_open = ?", 1).First(&myCmd)
+		if myCmd.ID > 0 {
+			return myCmd.CmdReply
+		}
+	}
+	return "欢迎新成功入群"
 }

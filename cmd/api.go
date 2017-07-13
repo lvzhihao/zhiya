@@ -59,6 +59,9 @@ var apiCmd = &cobra.Command{
 		apis.Client = client
 		// action
 		app.POST("/api/applycode", apis.ApplyCode)
+		app.POST("/api/syncrobots", apis.SyncRobots)
+		app.POST("/api/overchatroom", apis.OverChatRoom)
+		app.POST("/api/welcome", apis.ChatRoomMemberJoinWelcome) //201706221050000271
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},

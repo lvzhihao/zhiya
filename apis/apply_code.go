@@ -109,3 +109,44 @@ func ApplyCode(ctx echo.Context) error {
 		})
 	}
 }
+
+func SyncRobots(ctx echo.Context) error {
+	err := uchat.SyncRobots(Client, DB)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000002",
+			Error: err.Error(),
+		})
+	} else {
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: "success",
+		})
+	}
+}
+
+func OverChatRoom(ctx echo.Context) error {
+	serialNo := ctx.FormValue("serial_no")
+	comment := ctx.FormValue("comment")
+	err := uchat.SetChatRoomOver(serialNo, comment, Client)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000003",
+			Error: err.Error(),
+		})
+	} else {
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: "success",
+		})
+	}
+}
+
+func ChatRoomMemberJoinWelcome(ctx echo.Context) error {
+	serialNo := ctx.FormValue("serial_no")
+	msg := uchat.FetchChatRoomMemberJoinMessage(serialNo, DB)
+	return ctx.JSON(http.StatusOK, Result{
+		Code: "000000",
+		Data: msg,
+	})
+}

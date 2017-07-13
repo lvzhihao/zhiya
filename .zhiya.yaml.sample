@@ -13,3 +13,7 @@ rabbitmq_user: uchat
 rabbitmq_passwd: uchat
 rabbitmq_vhost: uchat
 rabbitmq_exchange_name: uchat_receive
+
+#hashids config
+hashids_slat: isMyZhiya
+hashids_minlen: 16

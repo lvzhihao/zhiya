@@ -28,7 +28,7 @@ func NewClient(marchantNo, marchantSecret string) *UchatClient {
 	}
 }
 
-func (c *UchatClient) Post(action string, ctx map[string]string) ([]byte, error) {
+func (c *UchatClient) Post(action string, ctx interface{}) ([]byte, error) {
 	b, err := json.Marshal(ctx)
 	if err != nil {
 		return nil, err
@@ -146,5 +146,29 @@ func (c *UchatClient) ChatRoomList(ctx map[string]string) ([]map[string]string, 
 func (c *UchatClient) ChatRoomUserInfo(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomUserInfo", ctx)
+	return err
+}
+
+func (c *UchatClient) ChatRoomOpenGetMessages(ctx map[string]string) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomOpenGetMessages", ctx)
+	return err
+}
+
+func (c *UchatClient) ChatRoomCloseGetMessages(ctx map[string]string) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomCloseGetMessages", ctx)
+	return err
+}
+
+func (c *UchatClient) ChatRoomOver(ctx map[string]string) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomOver", ctx)
+	return err
+}
+
+func (c *UchatClient) SendMessage(ctx map[string]interface{}) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/MerchantSendMessages", ctx)
 	return err
 }

@@ -74,3 +74,29 @@ func Test_004_ChatRoomUserInfo(t *testing.T) {
 		}
 	}
 }
+
+func Test_005_ChatRoomCloseGetMessage(t *testing.T) {
+	for _, v := range testChatRooms {
+		ctx := make(map[string]string, 0)
+		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
+		err := testClient.ChatRoomCloseGetMessages(ctx)
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log("success")
+		}
+	}
+}
+
+func Test_006_ChatRoomOpenGetMessage(t *testing.T) {
+	for _, v := range testChatRooms {
+		ctx := make(map[string]string, 0)
+		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
+		err := testClient.ChatRoomOpenGetMessages(ctx)
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log("success")
+		}
+	}
+}

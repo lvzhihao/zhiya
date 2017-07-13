@@ -1,6 +1,17 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	"errors"
+
+	"github.com/jinzhu/gorm"
+)
+
+type MySubChatRoomConfig struct {
+	gorm.Model
+	MyId  string `gorm:"size:100;index:idx_my_id" json:"my_id"`
+	SubId string `gorm:"size:100;index:idx_sub_id" json:"sub_id"`
+	Num   int32  `json:"num"`
+}
 
 type ChatRoom struct {
 	gorm.Model
@@ -22,6 +33,14 @@ type RobotChatRoom struct {
 	MyId             string `gorm:"size:100;index:idx_my_id" json:"my_id"`
 	SubId            string `gorm:"size:100;index:idx_sub_id" json:"sub_id"`
 	TagId            string `gorm:"size:100;index:idx_tag_id" json:"tag_id"`
+}
+
+func FindRobotChatRoomByChatRoom(db *gorm.DB, chatRoomSerialNo string) (robotChatRoom RobotChatRoom, err error) {
+	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).Where("is_open = 1").First(&robotChatRoom).Error
+	if robotChatRoom.ID == 0 {
+		err = errors.New("no found")
+	}
+	return
 }
 
 func (c *RobotChatRoom) Ensure(db *gorm.DB, robotSerialNo, chatRoomSerialNo string) error {

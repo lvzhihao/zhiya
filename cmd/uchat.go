@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -66,6 +67,12 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.member.message_sum", 20, shell.MemberMessageSum)
 		case "uchat.chat.create":
 			consumer.Consumer("uchat.chat.create", 20, shell.ChatRoomCreate)
+		case "uchat.member.quit":
+			consumer.Consumer("uchat.member.quit", 20, shell.MemberQuit)
+		case "uchat.member.join":
+			consumer.Consumer("uchat.member.join", 20, shell.MemberJoin)
+		case "uchat.mysql.message.queue":
+			consumer.Consumer("uchat.mysql.message.queue", 20, shell.SendMessage)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -129,11 +136,13 @@ func (c *receiveConsumer) Consumer(queue string, prefetchCount int, handle func(
 }
 
 type consumerShell struct {
-	db *gorm.DB
+	db     *gorm.DB
+	client *uchat.UchatClient
 }
 
 func (c *consumerShell) Init() (err error) {
 	c.db, err = gorm.Open("mysql", viper.GetString("mysql_dns"))
+	c.client = uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		return viper.GetString("table_prefix") + "_" + defaultTableName
 	}
@@ -149,8 +158,10 @@ func (c *consumerShell) MemberList(msg amqp.Delivery) {
 	err := uchat.SyncChatRoomMembersCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.list"), zap.Error(err), zap.Any("msg", msg))
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.member.list"), zap.Any("msg", msg))
+		msg.Ack(false)
 	}
-	msg.Ack(false)
 	//msg.Nack(false, true)
 }
 
@@ -158,26 +169,69 @@ func (c *consumerShell) ChatRoomList(msg amqp.Delivery) {
 	err := uchat.SyncRobotChatRoomsCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.robot.chat.list"), zap.Error(err), zap.Any("msg", msg))
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.robot.chat.list"), zap.Any("msg", msg))
+		msg.Ack(false)
 	}
-	msg.Ack(false)
 }
 
 func (c *consumerShell) MemberMessageSum(msg amqp.Delivery) {
 	err := uchat.SyncMemberMessageSumCallback(msg.Body, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.message_sum"), zap.Error(err), zap.Any("msg", msg))
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.member.message_sum"), zap.Any("msg", msg))
+		msg.Ack(false)
 	}
-	msg.Ack(false)
 }
 
 func (c *consumerShell) ChatRoomCreate(msg amqp.Delivery) {
-	err := uchat.SyncChatRoomCreateCallback(msg.Body, c.db)
+	err := uchat.SyncChatRoomCreateCallback(msg.Body, c.client, c.db)
 	if err != nil {
-		Logger.Error("process error", zap.String("queue", "uchat.member.message_sum"), zap.Error(err), zap.Any("msg", msg))
+		Logger.Error("process error", zap.String("queue", "uchat.chat.create"), zap.Error(err), zap.Any("msg", msg))
 		msg.Nack(false, true)
 		//开通错误需要重试，不成功则需要人工干预，扔回队列
 	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.chat.create"), zap.Any("msg", msg))
 		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) MemberQuit(msg amqp.Delivery) {
+	err := uchat.SyncMemberQuitCallback(msg.Body, c.db)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.member.quit"), zap.Error(err), zap.Any("msg", msg))
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.member.quit"), zap.Any("msg", msg))
+		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) MemberJoin(msg amqp.Delivery) {
+	err := uchat.SyncMemberJoinCallback(msg.Body, c.db)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.member.join"), zap.Error(err), zap.Any("msg", msg))
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.member.join"), zap.Any("msg", msg))
+		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) SendMessage(msg amqp.Delivery) {
+	var rst map[string]interface{}
+	err := json.Unmarshal(msg.Body, &rst)
+	if err != nil {
+		Logger.Error("process error json unmarshal", zap.String("queue", "uchat.mysql.message.queue"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
+	} else {
+		err := c.client.SendMessage(rst)
+		if err != nil {
+			Logger.Error("process error send error", zap.String("queue", "uchat.mysql.message.queue"), zap.Error(err), zap.Any("msg", msg))
+			msg.Nack(false, true)
+		} else {
+			Logger.Error("process success", zap.String("queue", "uchat.mysql.message.queue"), zap.Error(err), zap.Any("msg", msg))
+			msg.Ack(false)
+		}
 	}
 }
 

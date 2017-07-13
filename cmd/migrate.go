@@ -137,8 +137,12 @@ var migrateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = db.AutoMigrate(&models.MySubChatRoomConfig{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
 		log.Println("db migrate success")
-
+		// receive queue
 		for k, v := range receiveQueueConfig {
 			client := &http.Client{}
 			b := bytes.NewBufferString("{\"auto_delete\":false,\"durable\":true,\"arguments\":[]}")
@@ -158,7 +162,7 @@ var migrateCmd = &cobra.Command{
 			}
 			b = bytes.NewBufferString("{\"routing_key\":\"" + v + "\",\"arguments\":[]}")
 			// ensure binding
-			req, err = http.NewRequest("POST", fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_exchange_name"), k), b)
+			req, err = http.NewRequest("POST", fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_receive_exchange_name"), k), b)
 			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
 			req.Header.Add("Content-Type", "application/json")
 			resp, err = client.Do(req)
@@ -168,7 +172,39 @@ var migrateCmd = &cobra.Command{
 			if resp.StatusCode != http.StatusCreated {
 				log.Fatal(resp)
 			}
-			log.Printf("queue create success: %s bind %s %s\n", k, viper.GetString("rabbitmq_exchange_name"), v)
+			log.Printf("queue create success: %s bind %s %s\n", k, viper.GetString("rabbitmq_receive_exchange_name"), v)
+		}
+		// message queue
+		for k, v := range messageQueueConfig {
+			client := &http.Client{}
+			b := bytes.NewBufferString("{\"auto_delete\":false,\"durable\":true,\"arguments\":[]}")
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), k), b)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// enusre queue
+			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
+			req.Header.Add("Content-Type", "application/json")
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if resp.StatusCode != http.StatusNoContent {
+				log.Fatal(resp)
+			}
+			b = bytes.NewBufferString("{\"routing_key\":\"" + v + "\",\"arguments\":[]}")
+			// ensure binding
+			req, err = http.NewRequest("POST", fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_message_exchange_name"), k), b)
+			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
+			req.Header.Add("Content-Type", "application/json")
+			resp, err = client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if resp.StatusCode != http.StatusCreated {
+				log.Fatal(resp)
+			}
+			log.Printf("queue create success: %s bind %s %s\n", k, viper.GetString("rabbitmq_message_exchange_name"), v)
 		}
 	},
 }

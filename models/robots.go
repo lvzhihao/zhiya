@@ -108,17 +108,23 @@ type TagCmd struct {
 
 type MessageQueue struct {
 	gorm.Model
-	QueueId              string `gorm:"size:100" json:"queue_id"`
-	ChatRoomSerialNoList string `gorm:"type:text(10000)" json:"chat_room_serial_no_list"`
-	ChatRoomCount        int32  `json:"chat_room_count"`
-	IsHit                bool   `json:"is_hit"`
-	WeixinSerialNo       string `gorm:"size:500" json:"weixin_serial_no"`
-	MsgType              string `gorm:"size:20;index:idx_msg_type" json:"msg_type"`
-	MsgContent           string `gorm:"type:text(10000)" json:"msg_content"`
-	Title                string `gorm:"size:200" json:"title"`
-	Description          string `gorm:"size:500" json:"description"`
-	Href                 string `gorm:"size:500" json:"href"`
-	VoiceTime            int32  `json:"voice_time"`
+	QueueId              string    `gorm:"size:100" json:"queue_id"`
+	MyId                 string    `gorm:"size:100;index:idx_my_id" json:"my_id"`
+	SubId                string    `gorm:"size:100;index:idx_sub_id" json:"sub_id"`
+	ChatRoomSerialNoList string    `gorm:"type:text(10000)" json:"chat_room_serial_no_list"`
+	ChatRoomCount        int32     `json:"chat_room_count"`
+	IsHit                bool      `json:"is_hit"`
+	WeixinSerialNo       string    `gorm:"size:500" json:"weixin_serial_no"`
+	MsgType              string    `gorm:"size:20;index:idx_msg_type" json:"msg_type"`
+	MsgContent           string    `gorm:"type:text(10000)" json:"msg_content"`
+	Title                string    `gorm:"size:200" json:"title"`
+	Description          string    `gorm:"size:500" json:"description"`
+	Href                 string    `gorm:"size:500" json:"href"`
+	VoiceTime            int32     `json:"voice_time"`
+	SendType             int8      `gorm:"type:tinyint(8)" json:"send_type"`
+	SendTime             time.Time `json:"send_time"`
+	SendStatus           int8      `gorm:"type:tinyint(8)" json:"send_status"`
+	SendStatusTime       time.Time `json:"send_status_time"`
 }
 
 type ChatRoomMember struct {
@@ -133,6 +139,7 @@ type ChatRoomMember struct {
 	MsgCount             int32     `gorm:"index:idx_message_count" json:"msg_count"`
 	LastMsgDate          time.Time `json:"last_msg_date"`
 	JoinDate             time.Time `json:"join_date"`
+	QuitDate             time.Time `json:"quit_date"`
 	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`
 }
 

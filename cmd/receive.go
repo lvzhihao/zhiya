@@ -119,7 +119,7 @@ RetryConnect:
 		time.Sleep(3 * time.Second)
 		goto RetryConnect
 	}
-	err = channel.ExchangeDeclare(viper.GetString("rabbitmq_exchange_name"), "topic", true, false, false, false, nil)
+	err = channel.ExchangeDeclare(viper.GetString("rabbitmq_receive_exchange_name"), "topic", true, false, false, false, nil)
 	if err != nil {
 		Logger.Error("Channel Connection Error 3", zap.String("route", c.routeKey), zap.Error(err))
 		conn.Close()
@@ -141,7 +141,7 @@ BreakFor:
 				ContentType:  "application/json",
 				Body:         []byte(str),
 			}
-			err := channel.Publish(viper.GetString("rabbitmq_exchange_name"), c.routeKey, false, false, msg)
+			err := channel.Publish(viper.GetString("rabbitmq_receive_exchange_name"), c.routeKey, false, false, msg)
 			if err != nil {
 				c.Channel <- str
 				conn.Close()
