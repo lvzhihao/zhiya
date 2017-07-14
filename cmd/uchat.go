@@ -73,6 +73,8 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.member.join", 20, shell.MemberJoin)
 		case "uchat.mysql.message.queue":
 			consumer.Consumer("uchat.mysql.message.queue", 20, shell.SendMessage)
+		case "uchat.chat.message":
+			consumer.Consumer("uchat.chat.message", 20, shell.ChatMessage)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -136,12 +138,14 @@ func (c *receiveConsumer) Consumer(queue string, prefetchCount int, handle func(
 }
 
 type consumerShell struct {
-	db     *gorm.DB
-	client *uchat.UchatClient
+	db        *gorm.DB
+	managerDB *gorm.DB
+	client    *uchat.UchatClient
 }
 
 func (c *consumerShell) Init() (err error) {
 	c.db, err = gorm.Open("mysql", viper.GetString("mysql_dns"))
+	c.managerDB, err = gorm.Open("mysql", viper.GetString("manager_mysql_dns"))
 	c.client = uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		return viper.GetString("table_prefix") + "_" + defaultTableName
@@ -237,6 +241,17 @@ func (c *consumerShell) SendMessage(msg amqp.Delivery) {
 			Logger.Error("process success", zap.String("queue", "uchat.mysql.message.queue"), zap.Error(err), zap.Any("msg", msg))
 			msg.Ack(false)
 		}
+	}
+}
+
+func (c *consumerShell) ChatMessage(msg amqp.Delivery) {
+	err := uchat.SyncChatMessageCallback(msg.Body, c.db, c.managerDB)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.chat.message"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.chat.message"), zap.Any("msg", msg))
+		msg.Ack(false)
 	}
 }
 

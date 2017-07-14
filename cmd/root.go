@@ -76,8 +76,6 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	uchat.DefaultMemberJoinWelcome = viper.GetString("uchat_member_join_welcome")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -95,4 +93,8 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+
+	uchat.DefaultMemberJoinWelcome = viper.GetString("uchat_member_join_welcome")
+
+	uchat.InitHashIds(viper.GetString("hashids_slat"), viper.GetInt("hashids_minlen"))
 }

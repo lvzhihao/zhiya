@@ -4,6 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -14,6 +18,14 @@ import (
 )
 
 var DefaultMemberJoinWelcome string = ""
+var HashID *hashids.HashID
+
+func InitHashIds(salt string, minLen int) {
+	hd := hashids.NewData()
+	hd.Salt = salt
+	hd.MinLength = minLen
+	HashID = hashids.NewWithData(hd)
+}
 
 // support retry
 func SyncRobots(client *UchatClient, db *gorm.DB) error {
@@ -337,7 +349,7 @@ func SyncChatRoomCreateCallback(b []byte, client *UchatClient, db *gorm.DB) erro
 		// sync member info
 		SyncChatRoomMembers(chatRoomSerialNo, client)
 		// open get message
-		SetChatRoomOpenGetMessage(chatRoomSerialNo, client)
+		log.Println(SetChatRoomOpenGetMessage(chatRoomSerialNo, client))
 	}
 	return nil
 }
@@ -440,11 +452,7 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db 
 	if err != nil {
 		return err
 	}
-	hd := hashids.NewData()
-	hd.Salt = "test~~~llll"
-	hd.MinLength = 16
-	h := hashids.NewWithData(hd)
-	message.QueueId, _ = h.Encode([]int{int(message.ID)})
+	message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
 	return db.Save(message).Error
 }
 
@@ -473,4 +481,172 @@ func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string
 		}
 	}
 	return ""
+}
+
+func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	for _, v := range list {
+		if goutils.ToString(v["nMsgType"]) != "2001" {
+			continue
+		}
+		b, err := base64.StdEncoding.DecodeString(goutils.ToString(v["vcContent"]))
+		if err != nil {
+			return err
+		}
+		content := string(b)
+		if content == "" {
+			continue
+		}
+		var robotChatRoom models.RobotChatRoom
+		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+		if robotChatRoom.MyId != "" { //有绑定供应商
+			pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+			//如果已经匹配关键字则不用再去搜索优惠链接
+			if err != nil {
+				err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+				log.Println(err)
+			}
+		}
+	}
+	return nil
+}
+
+func FetchAlimamaSearchPid(myId, subId string, db *gorm.DB) (string, error) {
+	if subId != "" {
+		pid := ""
+		row := db.Table("sdb_maifou_promotion_detail").Where("supplier_id = ?", myId).Where("shop_id = ?", subId).Select("pid").Row()
+		row.Scan(&pid)
+		if pid != "" {
+			return pid, nil
+		}
+	} else {
+		pid := ""
+		row := db.Table("sdb_maifou_promotion_detail").Where("supplier_id = ?", myId).Where("is_self = ?", true).Select("pid").Row()
+		row.Scan(&pid)
+		if pid != "" {
+			return pid, nil
+		}
+	}
+	return "", errors.New("no pid")
+}
+
+func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *gorm.DB) error {
+	var cmd models.MyCmd
+	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
+	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
+		key := strings.Replace(content, cmd.CmdValue, "", -1)
+		if key != "" {
+			params := url.Values{}
+			params.Set("nav", "0")
+			params.Set("p", pid)
+			params.Set("searchText", strings.TrimSpace(key))
+			url := "http://m.xuanwonainiu.com/search?" + params.Encode()
+			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
+			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
+			message := &models.MessageQueue{}
+			message.ChatRoomSerialNoList = chatRoomSerialNo
+			message.ChatRoomCount = 1
+			message.MsgType = "2001"
+			message.IsHit = true
+			message.WeixinSerialNo = ""
+			message.MsgContent = pubContent
+			message.SendType = 1
+			message.SendStatus = 0
+			err := db.Create(message).Error
+			if err != nil {
+				return err
+			}
+			message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+			return db.Save(message).Error
+		}
+	}
+	//todo log
+	return errors.New("no alimama.product.search config")
+}
+
+func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gorm.DB) error {
+	var cmd models.MyCmd
+	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
+	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
+		params := url.Values{}
+		params.Set("nav", "0")
+		params.Set("p", pid)
+		url := "http://m.xuanwonainiu.com/?" + params.Encode()
+		pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
+		message := &models.MessageQueue{}
+		message.ChatRoomSerialNoList = chatRoomSerialNo
+		message.ChatRoomCount = 1
+		message.MsgType = "2001"
+		message.IsHit = true
+		message.WeixinSerialNo = ""
+		message.MsgContent = pubContent
+		message.SendType = 1
+		message.SendStatus = 0
+		err := db.Create(message).Error
+		if err != nil {
+			return err
+		}
+		message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+		return db.Save(message).Error
+	}
+	//todo log
+	return errors.New("no alimama.coupon.search config")
+}
+
+func ShortUrl(link string) string {
+	p := url.Values{}
+	p.Set("source", "1998084992")
+	p.Set("url_long", link)
+	req, err := http.NewRequest("GET", "https://api.weibo.com/2/short_url/shorten.json?"+p.Encode(), nil)
+	if err != nil {
+		return link
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return link
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return link
+	}
+	var rst map[string]interface{}
+	err = json.Unmarshal(b, &rst)
+	if err != nil {
+		return link
+	}
+	if _, ok := rst["urls"]; !ok {
+		return link
+	}
+	var links []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(rst["urls"])), &links)
+	if err != nil {
+		return link
+	}
+	if len(links) == 0 {
+		return link
+	}
+	if _, ok := links[0]["url_short"]; !ok {
+		return link
+	}
+	return goutils.ToString(links[0]["url_short"])
 }
