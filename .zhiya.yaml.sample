@@ -1,6 +1,7 @@
 #mysql config
 mysql_dns: root:123456@tcp(10.10.28.178:3306)/uchat?parseTime=true&charset=utf8mb4,utf8&loc=Asia%2FShanghai #&interpolateParams=true
 table_prefix: demo
+manager_mysql_dns: root:123456@tcp(10.10.28.178:3306)/uchat_manager?parseTime=true&charset=utf8mb4,utf8&loc=Asia%2FShanghai
 
 #uchat config
 merchant_no: 201705311010001
@@ -12,7 +13,8 @@ rabbitmq_api: http://xx.xxx.xx/api
 rabbitmq_user: uchat
 rabbitmq_passwd: uchat
 rabbitmq_vhost: uchat
-rabbitmq_exchange_name: uchat_receive
+rabbitmq_receive_exchange_name: uchat_receive
+rabbitmq_message_exchange_name: uchat_message
 
 #hashids config
 hashids_slat: isMyZhiya
