@@ -13,6 +13,8 @@ import (
 	hashids "github.com/speps/go-hashids"
 )
 
+var DefaultMemberJoinWelcome string = ""
+
 // support retry
 func SyncRobots(client *UchatClient, db *gorm.DB) error {
 	rst, err := client.RobotList()
@@ -465,6 +467,10 @@ func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string
 		if myCmd.ID > 0 {
 			return myCmd.CmdReply
 		}
+		//如果绑过供应商且代应商也无欢迎信息，出系统默认
+		if robotChatRoom.MyId != "" {
+			return DefaultMemberJoinWelcome
+		}
 	}
-	return "欢迎新成功入群"
+	return ""
 }

@@ -26,6 +26,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -75,6 +76,8 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	uchat.DefaultMemberJoinWelcome = viper.GetString("uchat_member_join_welcome")
 }
 
 // initConfig reads in config file and ENV variables if set.

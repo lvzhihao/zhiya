@@ -17,3 +17,6 @@ rabbitmq_exchange_name: uchat_receive
 #hashids config
 hashids_slat: isMyZhiya
 hashids_minlen: 16
+
+#default config
+uchat_member_join_welcome: 欢迎新用户加入
