@@ -34,12 +34,12 @@ func (c *ChatRoom) Ensure(db *gorm.DB, chatRoomSerialNo string) error {
 // 设备开群记录
 type RobotChatRoom struct {
 	gorm.Model
-	RobotSerialNo    string `gorm:"size:100" json:"robot_serial_no"` //robotNo chatNo index
-	ChatRoomSerialNo string `gorm:"size:100" json:"chat_room_serial_no"`
-	IsOpen           bool   `gorm:"index:idx_is_open" json:"is_open"`
-	MyId             string `gorm:"size:100;index:idx_my_id" json:"my_id"`
-	SubId            string `gorm:"size:100;index:idx_sub_id" json:"sub_id"`
-	TagId            string `gorm:"size:100;index:idx_tag_id" json:"tag_id"`
+	RobotSerialNo    string `gorm:"size:100" json:"robot_serial_no"`         //设备号
+	ChatRoomSerialNo string `gorm:"size:100" json:"chat_room_serial_no"`     //群编号
+	IsOpen           bool   `gorm:"index:idx_is_open" json:"is_open"`        // 是否开启
+	MyId             string `gorm:"size:100;index:idx_my_id" json:"my_id"`   //供应商ID
+	SubId            string `gorm:"size:100;index:idx_sub_id" json:"sub_id"` //代理商ID
+	TagId            string `gorm:"size:100;index:idx_tag_id" json:"tag_id"` //分组TAG
 }
 
 /*

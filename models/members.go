@@ -9,18 +9,18 @@ import (
 // 群成员
 type ChatRoomMember struct {
 	gorm.Model
-	ChatRoomSerialNo     string    `gorm:"size:100" json:"chat_room_serial_no"`
-	WxUserSerialNo       string    `gorm:"size:100" json:"wx_user_serial_no"`
-	NickName             string    `gorm:"size:255" json:"nick_name"`
-	Base64NickName       string    `gorm:"size:500" json:"base64_nick_name"`
-	HeadImages           string    `gorm:"size:500" json:"head_images"`
-	JoinChatRoomType     int32     `gorm:"index:idx_join_chat_room_type" json:"join_chat_roome_type"`
-	FatherWxUserSerialNo string    `gorm:"size:100" json:"father_wx_user_serial_no"`
-	MsgCount             int32     `gorm:"index:idx_message_count" json:"msg_count"`
-	LastMsgDate          time.Time `json:"last_msg_date"`
-	JoinDate             time.Time `json:"join_date"`
-	QuitDate             time.Time `json:"quit_date"`
-	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`
+	ChatRoomSerialNo     string    `gorm:"size:100" json:"chat_room_serial_no"`                       //群编号
+	WxUserSerialNo       string    `gorm:"size:100" json:"wx_user_serial_no"`                         //会员编号
+	NickName             string    `gorm:"size:255" json:"nick_name"`                                 //昵称
+	Base64NickName       string    `gorm:"size:500" json:"base64_nick_name"`                          //昵称Base64
+	HeadImages           string    `gorm:"size:500" json:"head_images"`                               //会员头像
+	JoinChatRoomType     int32     `gorm:"index:idx_join_chat_room_type" json:"join_chat_roome_type"` //入群方式
+	FatherWxUserSerialNo string    `gorm:"size:100" json:"father_wx_user_serial_no"`                  //推荐人
+	MsgCount             int32     `gorm:"index:idx_message_count" json:"msg_count"`                  //发言总数
+	LastMsgDate          time.Time `json:"last_msg_date"`                                             //最后发言时间
+	JoinDate             time.Time `json:"join_date"`                                                 //入群时间
+	QuitDate             time.Time `json:"quit_date"`                                                 //退群时间
+	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`                      //是否活跃
 }
 
 /*
