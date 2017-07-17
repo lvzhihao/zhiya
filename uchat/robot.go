@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// 小U机器客户端
 type UchatClient struct {
 	MarchantNo     string
 	MarchantSecret string
@@ -20,6 +21,9 @@ type UchatClient struct {
 	DefaultTimeout time.Duration
 }
 
+/*
+  初始化一个新的实例
+*/
 func NewClient(marchantNo, marchantSecret string) *UchatClient {
 	return &UchatClient{
 		MarchantNo:     marchantNo,
@@ -28,6 +32,9 @@ func NewClient(marchantNo, marchantSecret string) *UchatClient {
 	}
 }
 
+/*
+  发送请求
+*/
 func (c *UchatClient) Post(action string, ctx interface{}) ([]byte, error) {
 	b, err := json.Marshal(ctx)
 	if err != nil {
@@ -78,6 +85,9 @@ func (c *UchatClient) Post(action string, ctx interface{}) ([]byte, error) {
 	return json.Marshal(data[0])
 }
 
+/*
+  签名信息
+*/
 func (c *UchatClient) Sign(strCtx string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(strCtx+c.MarchantSecret)))
 }
@@ -86,6 +96,9 @@ type RobotListResult struct {
 	RobotInfo []map[string]string
 }
 
+/*
+  获取设备列表
+*/
 func (c *UchatClient) RobotList() ([]map[string]string, error) {
 	ctx := make(map[string]string, 0)
 	ctx["MerchantNo"] = c.MarchantNo
@@ -107,6 +120,9 @@ type ApplyCodeList struct {
 	ApplyCodeData []map[string]string
 }
 
+/*
+  获取验证码
+*/
 func (c *UchatClient) ApplyCodeList(ctx map[string]string) ([]map[string]string, error) {
 	ctx["MerchantNo"] = c.MarchantNo
 	data, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ApplyCodeList", ctx)
@@ -127,6 +143,9 @@ type ChatRoomList struct {
 	ChatRoomData []map[string]string
 }
 
+/*
+  获取设备群列表
+*/
 func (c *UchatClient) ChatRoomList(ctx map[string]string) ([]map[string]string, error) {
 	ctx["MerchantNo"] = c.MarchantNo
 	data, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomList", ctx)
@@ -143,30 +162,45 @@ func (c *UchatClient) ChatRoomList(ctx map[string]string) ([]map[string]string, 
 	}
 }
 
+/*
+  发起群会员列表回调
+*/
 func (c *UchatClient) ChatRoomUserInfo(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomUserInfo", ctx)
 	return err
 }
 
+/*
+  开启时时群信息
+*/
 func (c *UchatClient) ChatRoomOpenGetMessages(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomOpenGetMessages", ctx)
 	return err
 }
 
+/*
+  关闭时时群信息
+*/
 func (c *UchatClient) ChatRoomCloseGetMessages(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomCloseGetMessages", ctx)
 	return err
 }
 
+/*
+  关闭群
+*/
 func (c *UchatClient) ChatRoomOver(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomOver", ctx)
 	return err
 }
 
+/*
+  群推送消息
+*/
 func (c *UchatClient) SendMessage(ctx map[string]interface{}) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/MerchantSendMessages", ctx)

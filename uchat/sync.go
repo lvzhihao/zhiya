@@ -20,6 +20,7 @@ import (
 var DefaultMemberJoinWelcome string = ""
 var HashID *hashids.HashID
 
+//初始化hashids
 func InitHashIds(salt string, minLen int) {
 	hd := hashids.NewData()
 	hd.Salt = salt
@@ -27,7 +28,10 @@ func InitHashIds(salt string, minLen int) {
 	HashID = hashids.NewWithData(hd)
 }
 
-// support retry
+/*
+  同步设备列表
+  支持重复调用
+*/
 func SyncRobots(client *UchatClient, db *gorm.DB) error {
 	rst, err := client.RobotList()
 	if err != nil {
@@ -55,6 +59,9 @@ func SyncRobots(client *UchatClient, db *gorm.DB) error {
 	return nil
 }
 
+/*
+  关群调用
+*/
 func SetChatRoomOver(chatRoomSerialNo, comment string, client *UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
@@ -62,19 +69,28 @@ func SetChatRoomOver(chatRoomSerialNo, comment string, client *UchatClient) erro
 	return client.ChatRoomOver(ctx)
 }
 
+/*
+  群内时时消息开启设置
+*/
 func SetChatRoomOpenGetMessage(chatRoomSerialNo string, client *UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	return client.ChatRoomOpenGetMessages(ctx)
 }
 
+/*
+  群内时时消息关闭设置
+*/
 func SetChatRoomCloseGetMessage(chatRoomSerialNo string, client *UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	return client.ChatRoomCloseGetMessages(ctx)
 }
 
-// support retry
+/*
+  同步群会员信息
+  支持重复调用
+*/
 func SyncChatRoomMembers(chatRoomSerialNo string, client *UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
@@ -85,7 +101,10 @@ type ChatRoomMembersList struct {
 	ChatRoomUserData []map[string]string
 }
 
-// support retry
+/*
+  群会员信息回调
+  支持重复调用
+*/
 func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -150,6 +169,10 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
+/*
+  同步设备开群信息回调
+  支持重复调用
+*/
 func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -206,7 +229,10 @@ func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
-// support retry
+/*
+  同步设备开群信息
+  支持重复调用
+*/
 func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcRobotSerialNo"] = RobotSerialNo
@@ -262,6 +288,10 @@ func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) 
 	return nil
 }
 
+/*
+  同步群成员发言数量回调
+  支持重复调用
+*/
 func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -299,6 +329,10 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
+/*
+  同步开群通知回调
+  支持重复调用
+*/
 func SyncChatRoomCreateCallback(b []byte, client *UchatClient, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -354,6 +388,10 @@ func SyncChatRoomCreateCallback(b []byte, client *UchatClient, db *gorm.DB) erro
 	return nil
 }
 
+/*
+  同步群成员退群通知回调
+  支持重复调用
+*/
 func SyncMemberQuitCallback(b []byte, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -386,6 +424,10 @@ func SyncMemberQuitCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
+/*
+  同步群成员入群通知回调
+  支持重复调用
+*/
 func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -427,6 +469,9 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
 	return nil
 }
 
+/*
+  发送群内信息
+*/
 func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db *gorm.DB) error {
 	if msg == "" {
 		msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
@@ -456,6 +501,9 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db 
 	return db.Save(message).Error
 }
 
+/*
+  获取入群欢迎通知
+*/
 func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string {
 	var chatRoomCmd models.ChatRoomCmd
 	db.Where("chat_room_serial_no = ?", charRoomSerialNo).Where("cmd_type = ?", "member.join.welcome").Where("is_open = ?", 1).First(&chatRoomCmd)
@@ -483,6 +531,10 @@ func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string
 	return ""
 }
 
+/*
+  同步群成员时时消息回调
+  支持重复调用
+*/
 func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
@@ -529,6 +581,9 @@ func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 	return nil
 }
 
+/*
+  获取淘宝联盟广告位pid
+*/
 func FetchAlimamaSearchPid(myId, subId string, db *gorm.DB) (string, error) {
 	if subId != "" {
 		pid := ""
@@ -548,6 +603,9 @@ func FetchAlimamaSearchPid(myId, subId string, db *gorm.DB) (string, error) {
 	return "", errors.New("no pid")
 }
 
+/*
+  获取淘宝联盟产品搜索信息
+*/
 func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *gorm.DB) error {
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
@@ -582,6 +640,9 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
 	return errors.New("no alimama.product.search config")
 }
 
+/*
+  获取淘宝联盟优惠信息
+*/
 func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gorm.DB) error {
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
@@ -611,6 +672,9 @@ func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gor
 	return errors.New("no alimama.coupon.search config")
 }
 
+/*
+  生成新浪短链接
+*/
 func ShortUrl(link string) string {
 	p := url.Values{}
 	p.Set("source", "1998084992")
