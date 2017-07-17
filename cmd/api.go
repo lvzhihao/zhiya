@@ -37,15 +37,8 @@ var apiCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		defer Logger.Sync()
 		//app.Logger.SetLevel(log.INFO)
-
 		app := goutils.NewEcho()
 		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
-		/*
-			tool, err := NewTool(fmt.Sprintf("amqp://%s:%s@%s/%s", viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"), viper.GetString("rabbitmq_host"), viper.GetString("rabbitmq_vhost")))
-			if err != nil {
-				Logger.Error("RabbitMQ Connect Error", zap.Error(err))
-			}
-		*/
 		db, err := gorm.Open("mysql", viper.GetString("mysql_dns"))
 		if err != nil {
 			Logger.Sugar().Fatal(err)

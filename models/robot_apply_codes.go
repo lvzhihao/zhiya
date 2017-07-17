@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// 开群验证码
 type RobotApplyCode struct {
 	gorm.Model
 	RobotSerialNo    string    `gorm:"size:100;index:idx_robot_serial_no" json:"robot_serial_no"`
@@ -23,11 +24,17 @@ type RobotApplyCode struct {
 	UsedTime         time.Time `json:"used_time"`
 }
 
+/*
+  根据供应商查找当前可用的验证码
+*/
 func FindVaildApplyCodeByMyId(db *gorm.DB, myId, subId string) (list []RobotApplyCode, err error) {
 	err = db.Where("expire_time >= ?", time.Now()).Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("used = ?", 0).Order("expire_time desc").Find(&list).Error
 	return
 }
 
+/*
+  使用验证码
+*/
 func ApplyCodeUsed(db *gorm.DB, codeSerialNo string) (code RobotApplyCode, err error) {
 	err = db.Where("code_serial_no = ?", codeSerialNo).Find(&code).Error
 	if err != nil {

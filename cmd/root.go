@@ -62,10 +62,6 @@ var (
 )
 
 func init() {
-	// logger
-	Logger, _ = zap.NewProduction()
-	defer Logger.Sync() // flushes buffer, if any
-
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
@@ -94,7 +90,12 @@ func initConfig() {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 
+	// Logger
+	Logger, _ = zap.NewProduction()
+
+	// 设置全局默认短信欢迎语
 	uchat.DefaultMemberJoinWelcome = viper.GetString("uchat_member_join_welcome")
 
+	// 设置hashids配置
 	uchat.InitHashIds(viper.GetString("hashids_slat"), viper.GetInt("hashids_minlen"))
 }

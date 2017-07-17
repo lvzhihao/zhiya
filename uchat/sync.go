@@ -650,3 +650,16 @@ func ShortUrl(link string) string {
 	}
 	return goutils.ToString(links[0]["url_short"])
 }
+
+func SyncChatOverCallback(b []byte, client *UchatClient) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	_, ok := rst["chat_room_serial_no"]
+	if !ok {
+		return errors.New("no chatRoomeSerialNo")
+	}
+	return SetChatRoomOver(goutils.ToString(rst["chat_room_serial_no"]), "pc user", client)
+}

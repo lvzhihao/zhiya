@@ -23,7 +23,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"go.uber.org/zap"
@@ -75,6 +74,8 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.mysql.message.queue", 20, shell.SendMessage)
 		case "uchat.chat.message":
 			consumer.Consumer("uchat.chat.message", 20, shell.ChatMessage)
+		case "uchat.web.unbindrooms":
+			consumer.Consumer("uchat.web.unbindrooms", 20, shell.ChatOver)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -99,26 +100,25 @@ func (c *receiveConsumer) link(queue string, prefetchCount int) (<-chan amqp.Del
 	var err error
 	c.conn, err = amqp.Dial(c.amqpUrl)
 	if err != nil {
-		log.Printf("amqp.open: %s", err)
+		Logger.Error("amqp.open", zap.Error(err))
 		return nil, err
 	}
 	_, err = c.conn.Channel()
 	if err != nil {
-		log.Printf("channel.open: %s", err)
+		Logger.Error("channel.open", zap.Error(err))
 		return nil, err
 	}
 	channel, _ := c.conn.Channel()
 	if err := channel.Qos(prefetchCount, 0, false); err != nil {
-		log.Printf("channel.qos: %s", err)
+		Logger.Error("channel.qos", zap.Error(err))
 		return nil, err
 	}
 	deliveries, err := channel.Consume(queue, "ctag-"+goutils.RandomString(20), false, false, false, false, nil)
 	if err != nil {
-		log.Printf("base.consume: %v", err)
+		Logger.Error("base.consume", zap.Error(err))
 		return deliveries, err
 	}
 	return deliveries, nil
-
 }
 
 func (c *receiveConsumer) Consumer(queue string, prefetchCount int, handle func(msg amqp.Delivery)) {
@@ -196,8 +196,9 @@ func (c *consumerShell) ChatRoomCreate(msg amqp.Delivery) {
 	err := uchat.SyncChatRoomCreateCallback(msg.Body, c.client, c.db)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.chat.create"), zap.Error(err), zap.Any("msg", msg))
-		msg.Nack(false, true)
+		//msg.Nack(false, true)
 		//开通错误需要重试，不成功则需要人工干预，扔回队列
+		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.chat.create"), zap.Any("msg", msg))
 		msg.Ack(false)
@@ -236,7 +237,8 @@ func (c *consumerShell) SendMessage(msg amqp.Delivery) {
 		err := c.client.SendMessage(rst)
 		if err != nil {
 			Logger.Error("process error send error", zap.String("queue", "uchat.mysql.message.queue"), zap.Error(err), zap.Any("msg", msg))
-			msg.Nack(false, true)
+			//msg.Nack(false, true)
+			msg.Ack(false)
 		} else {
 			Logger.Error("process success", zap.String("queue", "uchat.mysql.message.queue"), zap.Error(err), zap.Any("msg", msg))
 			msg.Ack(false)
@@ -251,6 +253,17 @@ func (c *consumerShell) ChatMessage(msg amqp.Delivery) {
 		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.chat.message"), zap.Any("msg", msg))
+		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) ChatOver(msg amqp.Delivery) {
+	err := uchat.SyncChatOverCallback(msg.Body, c.client)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.web.unbindrooms"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.web.unbindrooms"), zap.Any("msg", msg))
 		msg.Ack(false)
 	}
 }
