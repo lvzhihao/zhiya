@@ -146,7 +146,7 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		member.HeadImages = goutils.ToString(v["vcHeadImages"])
 		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
 		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
-		member.MsgCount = goutils.ToInt32(v["nMsgCount"])
+		member.MsgCount += goutils.ToInt32(v["nMsgCount"])
 		member.IsActive = true
 		member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
 		member.JoinDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
@@ -319,7 +319,7 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
 			Where("chat_room_serial_no = ?", chatRoomSerialNo).
 			Where("wx_user_serial_no = ?", goutils.ToString(v["vcWXSerialNo"])).
 			Updates(map[string]interface{}{
-				"msg_count":     goutils.ToInt32(v["nMsgCount"]),
+				//"msg_count":     goutils.ToInt32(v["nMsgCount"]),  //这个接口会主动同步，msg_count是20分钟内的消息数，所以不能update
 				"last_msg_date": lastMsgDate,
 			}).Error
 		if err != nil {
@@ -610,7 +610,7 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
-		key := strings.Replace(content, cmd.CmdValue, "", -1)
+		key := strings.Replace(content, cmd.CmdValue, "", 1)
 		if key != "" {
 			params := url.Values{}
 			params.Set("nav", "0")

@@ -141,7 +141,7 @@ BreakFor:
 						href := strings.Replace(msg.Href, "{product_id}", utils.FakeIdEncode(goutils.ToInt64(msg.ProductId)), -1)
 						href = strings.Replace(href, "{my_id}", utils.FakeIdEncode(goutils.ToInt64(robotChatRoom.MyId)), -1)
 						href = strings.Replace(href, "{sub_id}", utils.FakeIdEncode(goutils.ToInt64(robotChatRoom.SubId)), -1)
-						data["vcHref"] = href
+						data["vcHref"] = strings.TrimRight(href, "/")
 					}
 					data["nVoiceTime"] = goutils.ToString(msg.VoiceTime)
 					datas = append(datas, data)
