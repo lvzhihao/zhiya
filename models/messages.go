@@ -22,6 +22,7 @@ type MessageQueue struct {
 	Description          string    `gorm:"size:500" json:"description"`                      //卡片介绍
 	Href                 string    `gorm:"size:500" json:"href"`                             //卡片链接
 	VoiceTime            int32     `json:"voice_time"`                                       //音频时间
+	ProductId            string    `gorm:"size:100" json:"product_id"`                       //商品ID
 	SendType             int8      `gorm:"type:tinyint(8)" json:"send_type"`                 //发送类型
 	SendTime             time.Time `json:"send_time"`                                        //发送时间
 	SendStatus           int8      `gorm:"type:tinyint(8)" json:"send_status"`               //发送状态

@@ -31,6 +31,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
@@ -133,7 +134,15 @@ BreakFor:
 					data["msgContent"] = msg.MsgContent
 					data["vcTitle"] = msg.Title
 					data["vcDesc"] = msg.Description
-					data["vcHref"] = msg.Href
+					if msg.ProductId == "" {
+						data["vcHref"] = msg.Href
+					} else {
+						//yl商品 special
+						href := strings.Replace(msg.Href, "{product_id}", utils.FakeIdEncode(goutils.ToInt64(msg.ProductId)), -1)
+						href = strings.Replace(href, "{my_id}", utils.FakeIdEncode(goutils.ToInt64(robotChatRoom.MyId)), -1)
+						href = strings.Replace(href, "{sub_id}", utils.FakeIdEncode(goutils.ToInt64(robotChatRoom.SubId)), -1)
+						data["vcHref"] = href
+					}
 					data["nVoiceTime"] = goutils.ToString(msg.VoiceTime)
 					datas = append(datas, data)
 					rst["Data"] = datas
