@@ -18,11 +18,6 @@ func ToFloat(v interface{}) float64 {
 	}
 }
 
-func ToBytes(v interface{}) (b []byte) {
-	b = []byte(ToString(v))
-	return
-}
-
 func ToString(v interface{}) (s string) {
 	switch v.(type) {
 	case nil:
