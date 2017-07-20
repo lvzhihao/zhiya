@@ -9,8 +9,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
+
+	"github.com/lvzhihao/goutils"
+)
+
+var (
+	UchatApiPrefix string = "http://skyagent.shequnguanjia.com/Merchant.asmx"
 )
 
 // 小U机器客户端
@@ -19,6 +24,13 @@ type UchatClient struct {
 	MarchantSecret string
 	Error          error
 	DefaultTimeout time.Duration
+}
+
+// 小U机器接口返回格式
+type UchatClientResult struct {
+	Result string        `json:"nResult"`
+	Error  string        `json:"vcResult"`
+	Data   []interface{} `json:"data"`
 }
 
 /*
@@ -35,7 +47,7 @@ func NewClient(marchantNo, marchantSecret string) *UchatClient {
 /*
   发送请求
 */
-func (c *UchatClient) Post(action string, ctx interface{}) ([]byte, error) {
+func (c *UchatClient) Do(action string, ctx interface{}) ([]byte, error) {
 	b, err := json.Marshal(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +60,7 @@ func (c *UchatClient) Post(action string, ctx interface{}) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Content-Length", strconv.Itoa(len(p.Encode())))
+	req.Header.Add("Content-Length", goutils.ToString(len(p.Encode())))
 	client := &http.Client{
 		Timeout: c.DefaultTimeout,
 	}
@@ -61,28 +73,19 @@ func (c *UchatClient) Post(action string, ctx interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	var rst map[string]interface{}
+	var rst UchatClientResult
 	err = json.Unmarshal(b, &rst)
 	if err != nil {
 		return nil, err
 	}
-	if nResult, ok := rst["nResult"].(string); !ok || nResult != "1" {
-		if vcResult, ok := rst["vcResult"].(string); ok {
-			return nil, errors.New(vcResult)
+	if rst.Result != "1" {
+		if rst.Error != "" {
+			return nil, errors.New(rst.Error)
 		} else {
 			return nil, errors.New("未知错误")
 		}
 	}
-	b, err = json.Marshal(rst["Data"])
-	if err != nil {
-		return nil, err
-	}
-	var data []interface{}
-	err = json.Unmarshal(b, &data)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(data[0])
+	return json.Marshal(rst.Data[0])
 }
 
 /*
@@ -92,8 +95,31 @@ func (c *UchatClient) Sign(strCtx string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(strCtx+c.MarchantSecret)))
 }
 
-type RobotListResult struct {
-	RobotInfo []map[string]string
+type UchatClientGlobalResultList map[string]interface{}
+
+/*
+  全局
+*/
+func (c *UchatClient) ScanGlobalResultList(key string, data []byte, err error) ([]map[string]string, error) {
+	if err != nil {
+		return nil, err
+	}
+	var rst UchatClientGlobalResultList
+	err = json.Unmarshal(data, &rst)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := rst[key]; !ok {
+		return nil, errors.New(key + " not found")
+	}
+	var b []byte
+	b, err = json.Marshal(rst[key])
+	if err != nil {
+		return nil, err
+	}
+	var ret []map[string]string
+	err = json.Unmarshal(b, &ret)
+	return ret, err
 }
 
 /*
@@ -102,22 +128,8 @@ type RobotListResult struct {
 func (c *UchatClient) RobotList() ([]map[string]string, error) {
 	ctx := make(map[string]string, 0)
 	ctx["MerchantNo"] = c.MarchantNo
-	data, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/RobotList", ctx)
-	if err != nil {
-		return nil, err
-	} else {
-		var rst RobotListResult
-		err := json.Unmarshal(data, &rst)
-		if err != nil {
-			return nil, err
-		} else {
-			return rst.RobotInfo, nil
-		}
-	}
-}
-
-type ApplyCodeList struct {
-	ApplyCodeData []map[string]string
+	data, err := c.Do(UchatApiPrefix+"/RobotList", ctx)
+	return c.ScanGlobalResultList("RobotInfo", data, err)
 }
 
 /*
@@ -125,22 +137,8 @@ type ApplyCodeList struct {
 */
 func (c *UchatClient) ApplyCodeList(ctx map[string]string) ([]map[string]string, error) {
 	ctx["MerchantNo"] = c.MarchantNo
-	data, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ApplyCodeList", ctx)
-	if err != nil {
-		return nil, err
-	} else {
-		var rst ApplyCodeList
-		err := json.Unmarshal(data, &rst)
-		if err != nil {
-			return nil, err
-		} else {
-			return rst.ApplyCodeData, nil
-		}
-	}
-}
-
-type ChatRoomList struct {
-	ChatRoomData []map[string]string
+	data, err := c.Do(UchatApiPrefix+"/ApplyCodeList", ctx)
+	return c.ScanGlobalResultList("ApplyCodeData", data, err)
 }
 
 /*
@@ -148,18 +146,8 @@ type ChatRoomList struct {
 */
 func (c *UchatClient) ChatRoomList(ctx map[string]string) ([]map[string]string, error) {
 	ctx["MerchantNo"] = c.MarchantNo
-	data, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomList", ctx)
-	if err != nil {
-		return nil, err
-	} else {
-		var rst ChatRoomList
-		err := json.Unmarshal(data, &rst)
-		if err != nil {
-			return nil, err
-		} else {
-			return rst.ChatRoomData, nil
-		}
-	}
+	b, err := c.Do(UchatApiPrefix+"/ChatRoomList", ctx)
+	return c.ScanGlobalResultList("ChatRoomData", b, err)
 }
 
 /*
@@ -167,7 +155,7 @@ func (c *UchatClient) ChatRoomList(ctx map[string]string) ([]map[string]string, 
 */
 func (c *UchatClient) ChatRoomUserInfo(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
-	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomUserInfo", ctx)
+	_, err := c.Do(UchatApiPrefix+"/ChatRoomUserInfo", ctx)
 	return err
 }
 
@@ -176,7 +164,7 @@ func (c *UchatClient) ChatRoomUserInfo(ctx map[string]string) error {
 */
 func (c *UchatClient) ChatRoomOpenGetMessages(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
-	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomOpenGetMessages", ctx)
+	_, err := c.Do(UchatApiPrefix+"/ChatRoomOpenGetMessages", ctx)
 	return err
 }
 
@@ -185,7 +173,7 @@ func (c *UchatClient) ChatRoomOpenGetMessages(ctx map[string]string) error {
 */
 func (c *UchatClient) ChatRoomCloseGetMessages(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
-	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomCloseGetMessages", ctx)
+	_, err := c.Do(UchatApiPrefix+"/ChatRoomCloseGetMessages", ctx)
 	return err
 }
 
@@ -194,7 +182,7 @@ func (c *UchatClient) ChatRoomCloseGetMessages(ctx map[string]string) error {
 */
 func (c *UchatClient) ChatRoomOver(ctx map[string]string) error {
 	ctx["MerchantNo"] = c.MarchantNo
-	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/ChatRoomOver", ctx)
+	_, err := c.Do(UchatApiPrefix+"/ChatRoomOver", ctx)
 	return err
 }
 
@@ -203,6 +191,6 @@ func (c *UchatClient) ChatRoomOver(ctx map[string]string) error {
 */
 func (c *UchatClient) SendMessage(ctx map[string]interface{}) error {
 	ctx["MerchantNo"] = c.MarchantNo
-	_, err := c.Post("http://skyagent.shequnguanjia.com/Merchant.asmx/MerchantSendMessages", ctx)
+	_, err := c.Do(UchatApiPrefix+"/MerchantSendMessages", ctx)
 	return err
 }
