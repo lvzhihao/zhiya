@@ -14,19 +14,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
-	hashids "github.com/speps/go-hashids"
 )
-
-var DefaultMemberJoinWelcome string = ""
-var HashID *hashids.HashID
-
-//初始化hashids
-func InitHashIds(salt string, minLen int) {
-	hd := hashids.NewData()
-	hd.Salt = salt
-	hd.MinLength = minLen
-	HashID = hashids.NewWithData(hd)
-}
 
 /*
   同步设备列表
@@ -50,41 +38,13 @@ func SyncRobots(client *UchatClient, db *gorm.DB) error {
 		robot.Base64NickName = v["vcBase64NickName"]
 		robot.HeadImages = v["vcHeadImages"]
 		robot.CodeImages = v["vcCodeImages"]
-		robot.Status = int32(goutils.ToInt(v["nStatus"]))
+		robot.Status = goutils.ToInt32(v["nStatus"])
 		err = db.Save(&robot).Error
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-/*
-  关群调用
-*/
-func SetChatRoomOver(chatRoomSerialNo, comment string, client *UchatClient) error {
-	ctx := make(map[string]string, 0)
-	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
-	ctx["vcComment"] = comment
-	return client.ChatRoomOver(ctx)
-}
-
-/*
-  群内时时消息开启设置
-*/
-func SetChatRoomOpenGetMessage(chatRoomSerialNo string, client *UchatClient) error {
-	ctx := make(map[string]string, 0)
-	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
-	return client.ChatRoomOpenGetMessages(ctx)
-}
-
-/*
-  群内时时消息关闭设置
-*/
-func SetChatRoomCloseGetMessage(chatRoomSerialNo string, client *UchatClient) error {
-	ctx := make(map[string]string, 0)
-	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
-	return client.ChatRoomCloseGetMessages(ctx)
 }
 
 /*
@@ -95,78 +55,6 @@ func SyncChatRoomMembers(chatRoomSerialNo string, client *UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	return client.ChatRoomUserInfo(ctx)
-}
-
-type ChatRoomMembersList struct {
-	ChatRoomUserData []map[string]string
-}
-
-/*
-  群会员信息回调
-  支持重复调用
-*/
-func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
-	var rst map[string]interface{}
-	err := json.Unmarshal(b, &rst)
-	if err != nil {
-		return err
-	}
-	_, ok := rst["vcChatRoomSerialNo"]
-	if !ok {
-		return errors.New("empty vcChatRoomSerialNo")
-	}
-	chatRoomSerialNo := goutils.ToString(rst["vcChatRoomSerialNo"])
-	data, ok := rst["Data"]
-	if !ok {
-		return errors.New("empty Data")
-	}
-	var list ChatRoomMembersList
-	err = json.Unmarshal([]byte(strings.TrimRight(strings.TrimLeft(goutils.ToString(data), "["), "]")), &list)
-	if err != nil {
-		return err
-	}
-	var members []models.ChatRoomMember
-	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).Where("is_active = ?", true).Find(&members).Error
-	if err != nil {
-		return err
-	}
-	userSerialNos := make([]string, 0)
-	for _, v := range list.ChatRoomUserData {
-		// ensure chatroom
-		member := models.ChatRoomMember{}
-		err := member.Ensure(db, chatRoomSerialNo, goutils.ToString(v["vcSerialNo"]))
-		if err != nil {
-			return err
-		}
-		loc, _ := time.LoadLocation("Asia/Shanghai")
-		//member.NickName = goutils.ToString(v["vcNickName"])
-		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
-		member.NickName = goutils.ToString(nickNameB)
-		member.Base64NickName = goutils.ToString(v["vcBase64NickName"])
-		member.HeadImages = goutils.ToString(v["vcHeadImages"])
-		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
-		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
-		member.MsgCount += goutils.ToInt32(v["nMsgCount"])
-		member.IsActive = true
-		member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
-		member.JoinDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
-		err = db.Save(&member).Error
-		if err != nil {
-			return err
-		}
-		// last status for this chatroome
-		userSerialNos = append(userSerialNos, member.WxUserSerialNo)
-	}
-	//set close history
-	for _, member := range members {
-		if goutils.InStringSlice(userSerialNos, member.WxUserSerialNo) == false {
-			err := member.Unactive(db)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 /*
