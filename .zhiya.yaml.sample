@@ -15,6 +15,7 @@ rabbitmq_passwd: uchat
 rabbitmq_vhost: uchat
 rabbitmq_receive_exchange_name: uchat_receive
 rabbitmq_message_exchange_name: uchat_message
+rabbitmq_command_exchange_name: uchat_command
 
 #hashids config
 hashids_slat: isMyZhiya

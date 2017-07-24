@@ -206,6 +206,43 @@ var migrateCmd = &cobra.Command{
 			}
 			log.Printf("queue create success: %s bind %s %s\n", k, viper.GetString("rabbitmq_message_exchange_name"), v)
 		}
+
+		// command queue
+		for _, v := range initCmdType {
+			vname := "cmd." + v.TypeFlag
+			client := &http.Client{}
+			b := bytes.NewBufferString("{\"auto_delete\":false,\"durable\":true,\"arguments\":[]}")
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), vname), b)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// enusre queue
+			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
+			req.Header.Add("Content-Type", "application/json")
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if resp.StatusCode != http.StatusNoContent {
+				log.Fatal(resp)
+			}
+			b = bytes.NewBufferString("{\"routing_key\":\"" + vname + "\",\"arguments\":[]}")
+			// ensure binding
+			req, err = http.NewRequest(
+				"POST",
+				fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_command_exchange_name"), vname),
+				b)
+			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
+			req.Header.Add("Content-Type", "application/json")
+			resp, err = client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if resp.StatusCode != http.StatusCreated {
+				log.Fatal(resp)
+			}
+			log.Printf("queue create success: %s bind %s %s\n", vname, viper.GetString("rabbitmq_command_exchange_name"), vname)
+		}
 	},
 }
 

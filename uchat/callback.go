@@ -61,7 +61,7 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		member.HeadImages = goutils.ToString(v["vcHeadImages"])
 		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
 		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
-		member.MsgCount += goutils.ToInt32(v["nMsgCount"])
+		member.MsgCount = goutils.ToInt32(v["nMsgCount"])
 		member.IsActive = true
 		member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
 		member.JoinDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
