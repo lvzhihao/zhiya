@@ -51,6 +51,23 @@ var InitCmdTypeValues = `
 	]
 `
 
+var InitDBModel = []interface{}{
+	&models.RobotApplyCode{},      //机器人开通验证码，通过这里的记录验证开通的群属于谁
+	&models.Robot{},               //设备列表
+	&models.MyRobot{},             //设备归属关系
+	&models.ChatRoom{},            //微信群列表
+	&models.ChatRoomTag{},         //微信群TAG分组
+	&models.RobotChatRoom{},       //微信群归属关系
+	&models.CmdType{},             //命令类型
+	&models.ChatRoomCmd{},         //微信群命令
+	&models.MyCmd{},               //供应商命令
+	&models.SubCmd{},              //代理商命令
+	&models.TagCmd{},              //TAG分组命令
+	&models.MessageQueue{},        //发送消息队列
+	&models.ChatRoomMember{},      //微信群用户
+	&models.MySubChatRoomConfig{}, //代理商限制配置
+}
+
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
@@ -66,21 +83,15 @@ var migrateCmd = &cobra.Command{
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
 
-		migrateSql(db.AutoMigrate(&models.RobotApplyCode{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.Robot{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.MyRobot{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.ChatRoom{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.ChatRoomTag{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.RobotChatRoom{}).Error)
+		// migrate db table
+		for _, m := range InitDBModel {
+			log.Printf("%s migrate ... \n", db.NewScope(m).TableName())
+			migrateSql(db.AutoMigrate(m).Error)
+		}
 
 		migrateSql(db.Model(&models.RobotChatRoom{}).AddUniqueIndex("idx_robot_no_chat_no", "robot_serial_no", "chat_room_serial_no").Error)
-
-		migrateSql(db.AutoMigrate(&models.CmdType{}).Error)
+		migrateSql(db.Model(&models.ChatRoomMember{}).AddUniqueIndex("idx_chat_no_member_no", "chat_room_serial_no", "wx_user_serial_no").Error)
+		log.Println("db migrate success")
 
 		// ensure cmd type data
 		var initCmdType []models.CmdType
@@ -95,24 +106,7 @@ var migrateCmd = &cobra.Command{
 			}
 			db.Save(&v)
 		}
-
-		migrateSql(db.AutoMigrate(&models.ChatRoomCmd{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.MyCmd{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.SubCmd{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.TagCmd{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.MessageQueue{}).Error)
-
-		migrateSql(db.AutoMigrate(&models.ChatRoomMember{}).Error)
-
-		migrateSql(db.Model(&models.ChatRoomMember{}).AddUniqueIndex("idx_chat_no_member_no", "chat_room_serial_no", "wx_user_serial_no").Error)
-
-		migrateSql(db.AutoMigrate(&models.MySubChatRoomConfig{}).Error)
-
-		log.Println("db migrate success")
+		log.Println("data init success")
 
 		// receive queue
 		for k, v := range receiveQueueConfig {
