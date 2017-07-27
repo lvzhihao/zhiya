@@ -1,5 +1,16 @@
 package uchat
 
+func SetMerchantCmd(chatRoomSerialNo, cmdName string, client *UchatClient) error {
+	ctx := make(map[string]interface{}, 0)
+	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
+	ctx["Data"] = []interface{}{
+		map[string]string{
+			"vcCmdName": cmdName,
+		},
+	}
+	return client.MerchantCmd(ctx)
+}
+
 /*
   关群调用
 */

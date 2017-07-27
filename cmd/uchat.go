@@ -76,6 +76,8 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.chat.message", 20, shell.ChatMessage)
 		case "uchat.web.unbindrooms":
 			consumer.Consumer("uchat.web.unbindrooms", 20, shell.ChatOver)
+		case "uchat.chat.keyword":
+			consumer.Consumer("uchat.chat.keyword", 20, shell.ChatKeyword)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -264,6 +266,17 @@ func (c *consumerShell) ChatOver(msg amqp.Delivery) {
 		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.web.unbindrooms"), zap.Any("msg", msg))
+		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) ChatKeyword(msg amqp.Delivery) {
+	err := uchat.SyncChatKeywordCallback(msg.Body, c.db)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.chat.keyword"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.chat.keyword"), zap.Any("msg", msg))
 		msg.Ack(false)
 	}
 }

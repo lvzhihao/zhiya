@@ -35,11 +35,13 @@ type ChatRoomCmd struct {
 */
 type MyCmd struct {
 	gorm.Model
-	MyId     string `gorm:"size:100" json:"my_id"`                      //供应商ID
-	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
-	CmdValue string `gorm:"size:100" json:"cmd_value"`                  //指令内容
-	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
-	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
+	MyId                   string `gorm:"size:100" json:"my_id"`                      //供应商ID
+	AcceptChatRoomSerialNo string `gorm:"size:100" json:"accept_chat_room_serial_no"` //受权群编号
+	AcceptWxUserSerialNo   string `gorm:"size:100" json:"accpet_wx_user_serial_no"`   //受权用户
+	CmdType                string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
+	CmdValue               string `gorm:"size:100" json:"cmd_value"`                  //指令内容
+	CmdReply               string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
+	IsOpen                 bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
 }
 
 /*

@@ -34,6 +34,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
+	"github.com/vmihailenco/msgpack"
 )
 
 var receiveQueueConfig = map[string]string{
@@ -50,7 +51,7 @@ var receiveQueueConfig = map[string]string{
 	"uchat.chat.redpack":          uchat.ReceiveMQChatRedpack,
 	// global
 	"uchat.log":      "uchat.#",
-	"uchat.messages": "uchat.chat.message",
+	"uchat.messages": "uchat.chat.message", //所有设备，所有微信群，所有成员消息
 }
 
 var receiveActConfig = map[string]string{
@@ -148,6 +149,30 @@ BreakFor:
 				conn.Close()
 				Logger.Error("Channel Connection Error 4", zap.String("route", c.routeKey), zap.Error(err))
 				break BreakFor
+			}
+			// 原始流程保留，先保证日志等周边系统不会出现需要判断头信息来析构json或msgpack的情况出现
+			// 如果是聊天记录队列，则多push组织好的聊天记录数据，方便实验性的直播功能，待今后整合
+			if c.routeKey == "uchat.chat.message" {
+				var list []uchat.ChatMessageStruct
+				err := uchat.MessageCallbackUnmarshal([]byte(str), &list)
+				if err != nil {
+					Logger.Error("Message Struct Error", zap.Error(err), zap.String("data", str))
+				} else {
+					for _, v := range list {
+						rk := fmt.Sprintf("broadcast.%s.%s", v.ChatRoomSerialNo, v.FromWxUserSerialNo)
+						b, _ := msgpack.Marshal(v)
+						msg := amqp.Publishing{
+							DeliveryMode: amqp.Persistent,
+							Timestamp:    time.Now(),
+							ContentType:  "application/x-msgpack",
+							Body:         b,
+						}
+						err := channel.Publish(viper.GetString("rabbitmq_receive_exchange_name"), rk, false, false, msg)
+						if err != nil {
+							Logger.Error("Message Struct Publish", zap.Error(err), zap.Any("msg", msg))
+						}
+					}
+				}
 			}
 		}
 	}

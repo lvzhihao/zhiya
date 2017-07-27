@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/utils"
+	"github.com/spf13/viper"
 )
 
 /*
@@ -439,30 +442,144 @@ func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 		return err
 	}
 	for _, v := range list {
-		if goutils.ToString(v["nMsgType"]) != "2001" {
-			continue
-		}
-		b, err := base64.StdEncoding.DecodeString(goutils.ToString(v["vcContent"]))
-		if err != nil {
-			return err
-		}
-		content := string(b)
-		if content == "" {
-			continue
-		}
-		var robotChatRoom models.RobotChatRoom
-		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
-		if robotChatRoom.MyId != "" { //有绑定供应商
-			pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		//todo 需要今后改进
+		if goutils.ToString(v["nMsgType"]) == "2001" {
+			b, err := base64.StdEncoding.DecodeString(goutils.ToString(v["vcContent"]))
 			if err != nil {
-				log.Println(err)
-				continue
+				return err
 			}
-			err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
-			//如果已经匹配关键字则不用再去搜索优惠链接
+			content := string(b)
+			log.Println(content)
+			if content == "" {
+				continue
+			} else {
+				var robotChatRoom models.RobotChatRoom
+				db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+				if robotChatRoom.MyId != "" { //有绑定供应商
+					pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+					//如果已经匹配关键字则不用再去搜索优惠链接
+					if err != nil {
+						err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+						log.Println(err)
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func SyncChatKeywordCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	for _, v := range list {
+		content := strings.TrimSpace(goutils.ToString(v["vcContent"]))
+		if content == "直播开启" {
+			err := SendChatBroadcast(goutils.ToString(v["vcChatRoomSerialNo"]), goutils.ToString(v["vcFromWxUserSerialNo"]), content, db)
 			if err != nil {
-				err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
-				log.Println(err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func SendChatBroadcast(chatRoomSerialNo, wxUserSerialNo, content string, db *gorm.DB) error {
+	var robotChatRoom models.RobotChatRoom
+	db.Where("chat_room_serial_no = ?", chatRoomSerialNo).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+	if robotChatRoom.MyId != "" { //有绑定供应商
+		var cmd models.MyCmd
+		db.Where("my_id = ?", robotChatRoom.MyId).
+			Where("accept_chat_room_serial_no = ?", chatRoomSerialNo).
+			Where("accept_wx_user_serial_no = ?", wxUserSerialNo).
+			Where("cmd_type = ?", "chat.broadcast").
+			Where("is_open = ?", true).
+			First(&cmd)
+		//log.Fatal(cmd)
+		if cmd.ID > 0 {
+			var record models.ChatBroadcast
+			db.Where("my_id = ?", robotChatRoom.MyId).
+				Where("is_open = ?", true).
+				Where("expire_time >= ?", time.Now()).
+				First(&record)
+			if record.ID > 0 {
+				message := &models.MessageQueue{}
+				message.ChatRoomSerialNoList = chatRoomSerialNo
+				message.ChatRoomCount = 1
+				message.MsgType = "2001"
+				message.IsHit = true
+				message.WeixinSerialNo = wxUserSerialNo
+				message.MsgContent = "您已经有一次直播正在进行中，不需要重复开启"
+				message.SendType = 1
+				message.SendStatus = 0
+				err := db.Create(message).Error
+				if err != nil {
+					return err
+				}
+				message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+				return db.Save(message).Error
+			} else {
+				record := &models.ChatBroadcast{}
+				record.MyId = robotChatRoom.MyId
+				record.BroadcastChats = cmd.CmdReply
+				record.ExpireTime = time.Now().Add(2 * time.Hour)
+				record.IsOpen = true
+				err := db.Create(record).Error
+				if err != nil {
+					return err
+				}
+				record.BroadcastId, _ = HashID.Encode([]int{int(record.ID)})
+				err = db.Save(record).Error
+				if err != nil {
+					return err
+				}
+				// 添加队列
+				//先写死
+				rmqApi := viper.GetString("rabbitmq_api")
+				rmqUser := viper.GetString("rabbitmq_user")
+				rmqPasswd := viper.GetString("rabbitmq_passwd")
+				rmqVhost := viper.GetString("rabbitmq_vhost")
+				rmqExchange := viper.GetString("rabbitmq_receive_exchange_name")
+				err = utils.RegisterQueue(
+					rmqApi, rmqUser, rmqPasswd, rmqVhost,
+					"broadcast.message."+record.BroadcastId, rmqExchange, fmt.Sprintf("broadcast.%s.%s", chatRoomSerialNo, wxUserSerialNo),
+				)
+				if err != nil {
+					return err
+				}
+				// 发送开启消息
+				message := &models.MessageQueue{}
+				message.ChatRoomSerialNoList = chatRoomSerialNo
+				message.ChatRoomCount = 1
+				message.MsgType = "2001"
+				message.IsHit = true
+				message.WeixinSerialNo = wxUserSerialNo
+				message.MsgContent = "本次直播功能已经开启，本次直播将在2小时后自动关闭"
+				message.SendType = 1
+				message.SendStatus = 0
+				err = db.Create(message).Error
+				if err != nil {
+					return err
+				}
+				message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+				return db.Save(message).Error
 			}
 		}
 	}
@@ -526,6 +643,33 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
 	}
 	//todo log
 	return errors.New("no alimama.product.search config")
+}
+
+func SendBroadcast(chats string, chatMsg ChatMessageStruct, db *gorm.DB) error {
+	message := &models.MessageQueue{}
+	message.ChatRoomSerialNoList = chats
+	message.ChatRoomCount = 0
+	message.MsgType = goutils.ToString(chatMsg.MsgType)
+	message.IsHit = true
+	message.WeixinSerialNo = ""
+	if message.MsgType == "2001" {
+		bm, _ := base64.StdEncoding.DecodeString(chatMsg.Content)
+		message.MsgContent = goutils.ToString(bm)
+	} else {
+		message.MsgContent = chatMsg.Content
+	}
+	message.Title = chatMsg.ShareTitle
+	message.Description = chatMsg.ShareDesc
+	message.Href = chatMsg.ShareUrl
+	message.VoiceTime = chatMsg.VoiceTime
+	message.SendType = 1
+	message.SendStatus = 0
+	err := db.Create(message).Error
+	if err != nil {
+		return err
+	}
+	message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+	return db.Save(message).Error
 }
 
 /*

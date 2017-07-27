@@ -21,15 +21,14 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/uchat"
+	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -47,6 +46,10 @@ var InitCmdTypeValues = `
 		{
 			"type_flag": "alimama.coupon.search",
 			"type_name": "淘客优惠搜索"
+		},
+		{
+			"type_flag": "chat.broadcast",
+			"type_name": "群内直播"
 		}
 	]
 `
@@ -66,6 +69,7 @@ var InitDBModel = []interface{}{
 	&models.MessageQueue{},        //发送消息队列
 	&models.ChatRoomMember{},      //微信群用户
 	&models.MySubChatRoomConfig{}, //代理商限制配置
+	&models.ChatBroadcast{},       //直播记录
 }
 
 // migrateCmd represents the migrate command
@@ -82,6 +86,7 @@ var migrateCmd = &cobra.Command{
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
+		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 
 		// migrate db table
 		for _, m := range InitDBModel {
@@ -110,6 +115,12 @@ var migrateCmd = &cobra.Command{
 
 		// receive queue
 		for k, v := range receiveQueueConfig {
+			// 暂时不这样操作，等所有消息队列都改完后再添加这个功能
+			/*
+				if k == "uchat.chat.message" {
+					v = v + ".#" //所有聊天记录
+				}
+			*/
 			migrateQueue(k, viper.GetString("rabbitmq_receive_exchange_name"), v)
 		}
 
@@ -123,6 +134,13 @@ var migrateCmd = &cobra.Command{
 			vname := "cmd." + v.TypeFlag
 			migrateQueue(vname, viper.GetString("rabbitmq_command_exchange_name"), vname)
 		}
+
+		// migrate keywords
+		err = uchat.SetMerchantCmd("", "开启直播", client)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("keywords init success")
 	},
 }
 
@@ -137,7 +155,7 @@ func migrateQueue(name, exchange, key string) {
 	rmqUser := viper.GetString("rabbitmq_user")
 	rmqPasswd := viper.GetString("rabbitmq_passwd")
 	rmqVhost := viper.GetString("rabbitmq_vhost")
-	err := RegisterQueue(
+	err := utils.RegisterQueue(
 		rmqApi, rmqUser, rmqPasswd, rmqVhost,
 		name, exchange, key,
 	)
@@ -146,43 +164,6 @@ func migrateQueue(name, exchange, key string) {
 	} else {
 		log.Printf("queue create success: %s bind %s %s\n", name, exchange, key)
 	}
-}
-
-func RegisterQueue(api, user, passwd, vhost, name, exchange, key string) error {
-	client := &http.Client{}
-	b := bytes.NewBufferString(`{"auto_delete":false, "durable":true, "arguments":[]}`)
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", api, vhost, name), b)
-	if err != nil {
-		return err
-	}
-	// enusre queue
-	req.SetBasicAuth(user, passwd)
-	req.Header.Add("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("CreateQueue StatusError: %d, %v", resp.StatusCode, resp)
-	}
-	if exchange != "" && key != "" {
-		b = bytes.NewBufferString(`{"routing_key":"` + key + `", "arguments":[]}`)
-		// ensure binding
-		req, err = http.NewRequest(
-			"POST",
-			fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", api, vhost, exchange, name),
-			b)
-		req.SetBasicAuth(user, passwd)
-		req.Header.Add("Content-Type", "application/json")
-		resp, err = client.Do(req)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusCreated {
-			return fmt.Errorf("BindRoutingKey StatusError: %d, %v", resp.StatusCode, resp)
-		}
-	}
-	return nil
 }
 
 func init() {

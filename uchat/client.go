@@ -39,7 +39,7 @@ type UchatClient struct {
 
 // 小U机器接口返回格式
 type UchatClientResult struct {
-	Result string        `json:"nResult"`
+	Result interface{}   `json:"nResult"`
 	Error  string        `json:"vcResult"`
 	Data   []interface{} `json:"data"`
 }
@@ -89,7 +89,7 @@ func (c *UchatClient) Do(action string, ctx interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rst.Result != "1" {
+	if goutils.ToString(rst.Result) != "1" {
 		if rst.Error != "" {
 			return nil, errors.New(rst.Error)
 		} else {
@@ -203,5 +203,11 @@ func (c *UchatClient) ChatRoomOver(ctx map[string]string) error {
 func (c *UchatClient) SendMessage(ctx map[string]interface{}) error {
 	ctx["MerchantNo"] = c.MarchantNo
 	_, err := c.Do(UchatApiPrefix+"/MerchantSendMessages", ctx)
+	return err
+}
+
+func (c *UchatClient) MerchantCmd(ctx map[string]interface{}) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Do(UchatApiPrefix+"/MerchantCmd", ctx)
 	return err
 }

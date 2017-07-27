@@ -2,9 +2,19 @@ package models
 
 import (
 	"errors"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
+
+type ChatBroadcast struct {
+	gorm.Model
+	BroadcastId    string    `gorm:"size:100;index:idx_boradcast_id" json:"broadcast_id"` //
+	MyId           string    `gorm:"size:100;index:idx_my_id" json:"my_id"`               //第三方绑定用户标识
+	BroadcastChats string    `gorm:"type:text(10000)" json:"broadcast_chats"`             //直播群
+	ExpireTime     time.Time `json:"expire_time"`                                         //过期时间
+	IsOpen         bool      `json:"is_open"`                                             //是否开启
+}
 
 // 设备列表
 type Robot struct {
