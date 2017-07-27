@@ -135,8 +135,8 @@ func (c *BroadcastInstance) Receive(db *gorm.DB) {
 				if msg.(string) == "quit" {
 					return
 				}
-			case amqp.Delivery:
-				err := msgpack.Unmarshal(msg.(amqp.Delivery).Body, &chatMsg)
+			case []byte:
+				err := msgpack.Unmarshal(msg.([]byte), &chatMsg)
 				if err != nil {
 					Logger.Error("msgpack unmarshal error", zap.Error(err), zap.Any("msg", msg))
 				}
@@ -162,7 +162,7 @@ func (c *BroadcastInstance) Queue(queue string, prefetchCount int) {
 			continue
 		}
 		for msg := range deliveries {
-			c.Channel <- msg
+			c.Channel <- msg.Body
 			err := msg.Ack(false)
 			if err != nil {
 				break
