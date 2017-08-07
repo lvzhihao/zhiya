@@ -162,6 +162,21 @@ func (c *UchatClient) ChatRoomList(ctx map[string]string) ([]map[string]string, 
 }
 
 /*
+ 查询群状态接口
+*/
+func (c *UchatClient) ChatRoomStatus(ctx map[string]string) (map[string]string, error) {
+	ctx["MerchantNo"] = c.MarchantNo
+	b, err := c.Do(UchatApiPrefix+"/ChatRoomStatus", ctx)
+	if err != nil {
+		return nil, err
+	} else {
+		var rst map[string]string
+		err := json.Unmarshal(b, &rst)
+		return rst, err
+	}
+}
+
+/*
   发起群会员列表回调
 */
 func (c *UchatClient) ChatRoomUserInfo(ctx map[string]string) error {

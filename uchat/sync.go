@@ -118,6 +118,30 @@ func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
 }
 
 /*
+	同步群状态
+	支持重复调用
+*/
+func SyncChatRoomStatus(chatRoomSerialNo string, client *UchatClient, db *gorm.DB) error {
+	ctx := make(map[string]string, 0)
+	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
+	rst, err := client.ChatRoomStatus(ctx)
+	if err != nil {
+		return err
+	}
+	serialNo := goutils.ToString(rst["vcSerialNo"])
+	var room models.ChatRoom
+	err = db.Where("chat_room_serial_no = ?", serialNo).First(&room).Error
+	if err != nil {
+		return err
+	}
+	room.Status = goutils.ToInt32(rst["nStatus"])
+	room.RobotInStatus = goutils.ToInt32(rst["nRobotInStatus"])
+	room.RobotSerialNo = goutils.ToString(rst["vcRobotSerialNo"])
+	room.RobotStatus = goutils.ToInt32(rst["nRobotStatus"])
+	return db.Save(&room).Error
+}
+
+/*
   同步设备开群信息
   支持重复调用
 */
@@ -161,6 +185,8 @@ func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) 
 		if err != nil {
 			return err
 		}
+		// 同步群状态
+		SyncChatRoomStatus(robotRoom.ChatRoomSerialNo, client, db)
 		// last status for this robot
 		rootSerialNos = append(rootSerialNos, robotRoom.ChatRoomSerialNo)
 	}

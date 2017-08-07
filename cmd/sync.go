@@ -97,8 +97,28 @@ var syncCmd = &cobra.Command{
 					sugar.Infof("members sync success: %s\n", chat.ChatRoomSerialNo)
 				}
 			}
+		case "chatstatus":
+			rows, err := db.Model(&models.ChatRoom{}).Select("chat_room_serial_no").Rows()
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var no string
+				err := rows.Scan(&no)
+				if err != nil {
+					sugar.Error(err)
+				} else {
+					err := uchat.SyncChatRoomStatus(no, client, db)
+					if err != nil {
+						sugar.Error(err)
+					} else {
+						sugar.Infof("success: %s", no)
+					}
+				}
+			}
 		default:
-			sugar.Warn("only support robot/chat/member")
+			sugar.Warn("only support robot/chat/member/chatstatus")
 		}
 	},
 }

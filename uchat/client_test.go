@@ -100,3 +100,16 @@ func Test_006_ChatRoomOpenGetMessage(t *testing.T) {
 		}
 	}
 }
+
+func Test_007_ChatRoomStatus(t *testing.T) {
+	for _, v := range testChatRooms {
+		ctx := make(map[string]string, 0)
+		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
+		data, err := testClient.ChatRoomStatus(ctx)
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log(data)
+		}
+	}
+}

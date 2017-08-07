@@ -21,6 +21,10 @@ type ChatRoom struct {
 	WxUserSerialNo   string `gorm:"size:100" json:"wx_user_serial_no"`                //群主编号
 	Name             string `gorm:"size:255" json:"name"`                             //群名称
 	Base64Name       string `gorm:"size:500" json:"base64_name"`                      //群名称
+	Status           int32  `gorm:"index:idx_status" json:"status"`                   //群状态 10:开启 11:注销
+	RobotInStatus    int32  `json:"robot_in_status"`                                  //机器人是否在群内 0:在群内 1:不在群内
+	RobotSerialNo    string `gorm:"size:100" json:"robot_serial_no"`                  //设备号
+	RobotStatus      int32  `gorm:"index:idx_robot_status" json:"robot_status"`       //设备状态
 }
 
 /*
