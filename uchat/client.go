@@ -205,3 +205,12 @@ func (c *UchatClient) SendMessage(ctx map[string]interface{}) error {
 	_, err := c.Do(UchatApiPrefix+"/MerchantSendMessages", ctx)
 	return err
 }
+
+/*
+ 机器人添加用户好友
+*/
+func (c *UchatClient) RobotAddUser(ctx map[string]string) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Do(UchatApiPrefix+"/RobotAddUser", ctx)
+	return err
+}

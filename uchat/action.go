@@ -27,3 +27,10 @@ func SetChatRoomCloseGetMessage(chatRoomSerialNo string, client *UchatClient) er
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	return client.ChatRoomCloseGetMessages(ctx)
 }
+
+func ApplyRobotAddUser(robotSerialNo, userWexinId string, client *UchatClient) error {
+	ctx := make(map[string]string, 0)
+	ctx["vcRobotSerialNo"] = robotSerialNo
+	ctx["vcUserWeixinId"] = userWexinId
+	return client.RobotAddUser(ctx)
+}

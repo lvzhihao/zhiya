@@ -150,3 +150,21 @@ func ChatRoomMemberJoinWelcome(ctx echo.Context) error {
 		Data: msg,
 	})
 }
+
+func RobotAddUser(ctx echo.Context) error {
+	robotSerialNo := ctx.FormValue("robot_serial_no")
+	userWeixinId := ctx.FormValue("user_weixin_id")
+	err := uchat.ApplyRobotAddUser(robotSerialNo, userWeixinId, Client)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000004",
+			Error: err.Error(),
+		})
+	} else {
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: "success",
+		})
+	}
+
+}

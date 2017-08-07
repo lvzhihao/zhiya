@@ -21,46 +21,38 @@
 package cmd
 
 import (
-	"github.com/jinzhu/gorm"
-	"github.com/lvzhihao/goutils"
-	"github.com/lvzhihao/zhiya/apis"
-	"github.com/lvzhihao/zhiya/uchat"
+	"fmt"
+
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-// apiCmd represents the api command
-var apiCmd = &cobra.Command{
-	Use:   "api",
-	Short: "rust api 服务",
-	Long:  `rust api 支持，仅限内网调用`,
+// managerCmd represents the manager command
+var managerCmd = &cobra.Command{
+	Use:   "manager",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		defer Logger.Sync()
-		//app.Logger.SetLevel(log.INFO)
-		app := goutils.NewEcho()
-		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
-		db, err := gorm.Open("mysql", viper.GetString("mysql_dns"))
-		if err != nil {
-			Logger.Sugar().Fatal(err)
-		}
-		defer db.Close()
-		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-			return viper.GetString("table_prefix") + "_" + defaultTableName
-		}
-		apis.Logger = Logger
-		apis.DB = db
-		apis.Client = client
-		// action
-		app.POST("/api/applycode", apis.ApplyCode)
-		app.POST("/api/syncrobots", apis.SyncRobots)
-		app.POST("/api/overchatroom", apis.OverChatRoom)
-		app.POST("/api/welcome", apis.ChatRoomMemberJoinWelcome) //201706221050000271
-		app.POST("/api/robotadduser", apis.RobotAddUser)
-		// graceful shutdown
-		goutils.EchoStartWithGracefulShutdown(app, ":8079")
+		// TODO: Work your own magic here
+		fmt.Println("manager called")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(apiCmd)
+	RootCmd.AddCommand(managerCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// managerCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// managerCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
 }
