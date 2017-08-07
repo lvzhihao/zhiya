@@ -234,6 +234,7 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
 			Where("wx_user_serial_no = ?", goutils.ToString(v["vcWXSerialNo"])).
 			Updates(map[string]interface{}{
 				//"msg_count":     goutils.ToInt32(v["nMsgCount"]),  //这个接口会主动同步，msg_count是20分钟内的消息数，所以不能update
+				"msg_count":     gorm.Expr("msg_count + ?", goutils.ToInt32(v["nMsgCount"])),
 				"last_msg_date": lastMsgDate,
 			}).Error
 		if err != nil {
