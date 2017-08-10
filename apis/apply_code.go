@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"encoding/json"
 	"errors"
 	"math/rand"
 	"net/http"
@@ -10,15 +11,19 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
+	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/uchat"
+	"github.com/lvzhihao/zhiya/utils"
+	"github.com/spf13/viper"
 )
 
 var (
-	DB                        *gorm.DB                  //数据库
-	Logger                    *zap.Logger               //日志
-	Client                    *uchat.UchatClient        //uchat客户端
-	DefaultApplyCodeAddMinute string             = "10" //默认验证码有效时间
+	DB                        *gorm.DB           //数据库
+	Logger                    *zap.Logger        //日志
+	Client                    *uchat.UchatClient //uchat客户端
+	Tool                      *utils.ReceiveTool
+	DefaultApplyCodeAddMinute string = "10" //默认验证码有效时间
 )
 
 type Result struct {
@@ -28,7 +33,7 @@ type Result struct {
 }
 
 func init() {
-	//todo
+
 }
 
 // 获取验证码
@@ -167,4 +172,24 @@ func RobotAddUser(ctx echo.Context) error {
 		})
 	}
 
+}
+
+func SendMessage(ctx echo.Context) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal([]byte(ctx.FormValue("context")), &rst)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000005",
+			Error: err.Error(),
+		})
+	}
+	// 补充商户号和发送流水号
+	rst["MerchantNo"] = viper.GetString("merchant_no")
+	rst["vcRelaSerialNo"] = "api-" + goutils.RandomString(20)
+	b, _ := json.Marshal(rst)
+	Tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+	return ctx.JSON(http.StatusOK, Result{
+		Code: "000000",
+		Data: "success",
+	})
 }

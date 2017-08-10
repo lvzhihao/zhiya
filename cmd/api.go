@@ -21,12 +21,16 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/apis"
 	"github.com/lvzhihao/zhiya/uchat"
+	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // apiCmd represents the api command
@@ -47,15 +51,26 @@ var apiCmd = &cobra.Command{
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
+		tool, err := utils.NewTool(
+			fmt.Sprintf("amqp://%s:%s@%s/%s", viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"), viper.GetString("rabbitmq_host"), viper.GetString("rabbitmq_vhost")),
+			viper.GetString("rabbitmq_message_exchange_name"),
+			[]string{"uchat.mysql.message.queue"},
+		)
+		if err != nil {
+			Logger.Error("RabbitMQ Connect Error", zap.Error(err))
+		}
+		utils.Logger = Logger
 		apis.Logger = Logger
 		apis.DB = db
 		apis.Client = client
+		apis.Tool = tool
 		// action
 		app.POST("/api/applycode", apis.ApplyCode)
 		app.POST("/api/syncrobots", apis.SyncRobots)
 		app.POST("/api/overchatroom", apis.OverChatRoom)
 		app.POST("/api/welcome", apis.ChatRoomMemberJoinWelcome) //201706221050000271
 		app.POST("/api/robotadduser", apis.RobotAddUser)
+		app.POST("/api/sendmessage", apis.SendMessage)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},
