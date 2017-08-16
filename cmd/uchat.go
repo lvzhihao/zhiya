@@ -30,6 +30,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/uchat"
+	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
@@ -74,6 +75,8 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.mysql.message.queue", 20, shell.SendMessage)
 		case "uchat.chat.message":
 			consumer.Consumer("uchat.chat.message", 20, shell.ChatMessage)
+		case "uchat.chat.keyword":
+			consumer.Consumer("uchat.chat.keyword", 20, shell.ChatKeyword)
 		case "uchat.web.unbindrooms":
 			consumer.Consumer("uchat.web.unbindrooms", 20, shell.ChatOver)
 		default:
@@ -141,6 +144,7 @@ type consumerShell struct {
 	db        *gorm.DB
 	managerDB *gorm.DB
 	client    *uchat.UchatClient
+	sendTool  *utils.ReceiveTool
 }
 
 func (c *consumerShell) Init() (err error) {
@@ -150,6 +154,11 @@ func (c *consumerShell) Init() (err error) {
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		return viper.GetString("table_prefix") + "_" + defaultTableName
 	}
+	c.sendTool, err = utils.NewTool(
+		fmt.Sprintf("amqp://%s:%s@%s/%s", viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"), viper.GetString("rabbitmq_host"), viper.GetString("rabbitmq_vhost")),
+		viper.GetString("rabbitmq_message_exchange_name"),
+		[]string{"uchat.mysql.message.queue"},
+	)
 	return
 }
 
@@ -253,6 +262,17 @@ func (c *consumerShell) ChatMessage(msg amqp.Delivery) {
 		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.chat.message"), zap.Any("msg", msg))
+		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) ChatKeyword(msg amqp.Delivery) {
+	err := uchat.SyncChatKeywordCallback(msg.Body, c.db, c.managerDB, c.sendTool)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.chat.keyword"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.chat.keyword"), zap.Any("msg", msg))
 		msg.Ack(false)
 	}
 }

@@ -14,6 +14,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/tuling"
+	"github.com/lvzhihao/zhiya/utils"
+	"github.com/spf13/viper"
 )
 
 /*
@@ -444,6 +447,114 @@ func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string
 		}
 	}
 	return ""
+}
+
+func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *utils.ReceiveTool) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	data, ok := rst["Data"]
+	if !ok {
+		return errors.New("empty Data")
+	}
+	var list []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(data)), &list)
+	if err != nil {
+		return err
+	}
+	for _, v := range list {
+		var robotChatRoom models.RobotChatRoom
+		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+		if robotChatRoom.ID > 0 {
+			var tulingConfig models.TulingConfig
+			db.Where("uchat_robot_serial_no = ?", robotChatRoom.RobotSerialNo).Where("is_open = ?", 1).First(&tulingConfig)
+			if tulingConfig.ApiKey != "" {
+				data, err := FetchTulingResult(tulingConfig.ApiKey, tulingConfig.ApiSecret, map[string]interface{}{
+					"info":   goutils.ToString(v["vcContent"]),
+					"userid": goutils.ToString(v["vcFromWxUserSerialNo"]),
+				})
+				if err != nil {
+					log.Println(err)
+				} else {
+					rst := make(map[string]interface{}, 0)
+					rst["MerchantNo"] = viper.GetString("merchant_no")
+					rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
+					rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
+					rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+					rst["nIsHit"] = "1"
+					rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
+					rst["Data"] = data
+					b, _ := json.Marshal(rst)
+					tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func FetchTulingResult(key, secret string, context map[string]interface{}) ([]map[string]string, error) {
+	c := tuling.NewTulingClient(tuling.TulingClientConfig{
+		ApiUrl:         viper.GetString("tuling_api_url"),
+		ApiKey:         key,
+		ApiSecret:      secret,
+		DefaultTimeout: 10 * time.Second,
+	})
+	data, err := c.Do(context)
+	if err != nil {
+		return nil, err
+	}
+	if data.IsError() {
+		return nil, data.Error()
+	}
+	log.Println(data)
+	switch data.Code {
+	case 100000:
+		return []map[string]string{
+			map[string]string{
+				"nMsgType":   "2001",
+				"msgContent": data.Text,
+				"vcTitle":    "",
+				"vcDesc":     "",
+				"nVoiceTime": "0",
+				"vcHref":     "",
+			},
+		}, nil
+	case 200000:
+		return []map[string]string{
+			map[string]string{
+				"nMsgType":   "2001",
+				"msgContent": data.Text + " " + ShortUrl(data.Url),
+				"vcTitle":    "",
+				"vcDesc":     "",
+				"nVoiceTime": "0",
+				"vcHref":     "",
+			},
+		}, nil
+	case 308000:
+		return []map[string]string{
+			map[string]string{
+				"nMsgType":   "2001",
+				"msgContent": data.Text,
+				"vcTitle":    "",
+				"vcDesc":     "",
+				"nVoiceTime": "0",
+				"vcHref":     "",
+			},
+			map[string]string{
+				"nMsgType":   "2005",
+				"msgContent": data.List[0].Icon,
+				"vcTitle":    data.List[0].Name,
+				"vcDesc":     data.List[0].Info,
+				"nVoiceTime": "0",
+				"vcHref":     data.List[0].DetailUrl,
+			},
+		}, nil
+	default:
+		return nil, errors.New("未知类型")
+	}
 }
 
 /*
