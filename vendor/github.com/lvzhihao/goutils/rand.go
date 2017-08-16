@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+func RandStr(strlen int) string {
+	return RandomString(strlen)
+}
+
 func RandomString(strlen int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	rand.Seed(time.Now().UTC().UnixNano())

@@ -89,6 +89,10 @@ var migrateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = db.AutoMigrate(&models.TulingConfig{}).Error
+		if err != nil {
+			log.Fatal(err)
+		}
 		err = db.Model(&models.RobotChatRoom{}).AddUniqueIndex("idx_robot_no_chat_no", "robot_serial_no", "chat_room_serial_no").Error
 		if err != nil {
 			log.Fatal(err)

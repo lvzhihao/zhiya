@@ -52,7 +52,7 @@ func EchoStartWithGracefulShutdownThanGo18(app *echo.Echo, addr string) {
 	// Start server
 	go func() {
 		if err := app.Start(addr); err != nil {
-			app.Logger.Info("shutting down the server")
+			app.Logger.Fatal("shutting down the server:", err)
 		}
 	}()
 
