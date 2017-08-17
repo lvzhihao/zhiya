@@ -467,7 +467,7 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 	for _, v := range list {
 		if v["vcToWxUserSerialNo"] == "" {
 			var robotChatRoom models.RobotChatRoom
-			db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+			db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Where("open_tuling = ?", 1).Order("id desc").First(&robotChatRoom)
 			if robotChatRoom.ID > 0 {
 				var tulingConfig models.TulingConfig
 				db.Where("uchat_robot_serial_no = ?", robotChatRoom.RobotSerialNo).Where("is_open = ?", 1).First(&tulingConfig)
