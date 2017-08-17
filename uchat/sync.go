@@ -465,29 +465,31 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 		return err
 	}
 	for _, v := range list {
-		var robotChatRoom models.RobotChatRoom
-		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
-		if robotChatRoom.ID > 0 {
-			var tulingConfig models.TulingConfig
-			db.Where("uchat_robot_serial_no = ?", robotChatRoom.RobotSerialNo).Where("is_open = ?", 1).First(&tulingConfig)
-			if tulingConfig.ApiKey != "" {
-				data, err := FetchTulingResult(tulingConfig.ApiKey, tulingConfig.ApiSecret, map[string]interface{}{
-					"info":   goutils.ToString(v["vcContent"]),
-					"userid": goutils.ToString(v["vcFromWxUserSerialNo"]),
-				})
-				if err != nil {
-					log.Println(err)
-				} else {
-					rst := make(map[string]interface{}, 0)
-					rst["MerchantNo"] = viper.GetString("merchant_no")
-					rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
-					rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
-					rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
-					rst["nIsHit"] = "1"
-					rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
-					rst["Data"] = data
-					b, _ := json.Marshal(rst)
-					tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+		if v["vcToWxUserSerialNo"] == "" {
+			var robotChatRoom models.RobotChatRoom
+			db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+			if robotChatRoom.ID > 0 {
+				var tulingConfig models.TulingConfig
+				db.Where("uchat_robot_serial_no = ?", robotChatRoom.RobotSerialNo).Where("is_open = ?", 1).First(&tulingConfig)
+				if tulingConfig.ApiKey != "" {
+					data, err := FetchTulingResult(tulingConfig.ApiKey, tulingConfig.ApiSecret, map[string]interface{}{
+						"info":   goutils.ToString(v["vcContent"]),
+						"userid": goutils.ToString(v["vcFromWxUserSerialNo"]),
+					})
+					if err != nil {
+						log.Println(err)
+					} else {
+						rst := make(map[string]interface{}, 0)
+						rst["MerchantNo"] = viper.GetString("merchant_no")
+						rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
+						rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
+						rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+						rst["nIsHit"] = "1"
+						rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
+						rst["Data"] = data
+						b, _ := json.Marshal(rst)
+						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+					}
 				}
 			}
 		}
