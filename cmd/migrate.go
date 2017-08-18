@@ -21,15 +21,12 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -51,6 +48,24 @@ var InitCmdTypeValues = `
 	]
 `
 
+var InitDBModel = []interface{}{
+	&models.RobotApplyCode{},      //机器人开通验证码，通过这里的记录验证开通的群属于谁
+	&models.Robot{},               //设备列表
+	&models.MyRobot{},             //设备归属关系
+	&models.ChatRoom{},            //微信群列表
+	&models.ChatRoomTag{},         //微信群TAG分组
+	&models.RobotChatRoom{},       //微信群归属关系
+	&models.CmdType{},             //命令类型
+	&models.ChatRoomCmd{},         //微信群命令
+	&models.MyCmd{},               //供应商命令
+	&models.SubCmd{},              //代理商命令
+	&models.TagCmd{},              //TAG分组命令
+	&models.MessageQueue{},        //发送消息队列
+	&models.ChatRoomMember{},      //微信群用户
+	&models.MySubChatRoomConfig{}, //代理商限制配置
+	&models.TulingConfig{},        //图灵机器人配置
+}
+
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
@@ -65,152 +80,49 @@ var migrateCmd = &cobra.Command{
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
-		err = db.AutoMigrate(&models.RobotApplyCode{}).Error
-		if err != nil {
-			log.Fatal(err)
+
+		// migrate db table
+		for _, m := range InitDBModel {
+			log.Printf("%s migrate ... \n", db.NewScope(m).TableName())
+			migrateSql(db.AutoMigrate(m).Error)
 		}
-		err = db.AutoMigrate(&models.Robot{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.MyRobot{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.ChatRoom{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.ChatRoomTag{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.RobotChatRoom{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.TulingConfig{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.Model(&models.RobotChatRoom{}).AddUniqueIndex("idx_robot_no_chat_no", "robot_serial_no", "chat_room_serial_no").Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.CmdType{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		var initCmdType []models.CmdType
-		err = json.Unmarshal([]byte(InitCmdTypeValues), &initCmdType)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, v := range initCmdType {
-			err := v.Ensure(db, v.TypeFlag)
-			if err != nil {
-				log.Fatal(err)
-			}
-			db.Save(&v)
-		}
-		err = db.AutoMigrate(&models.ChatRoomCmd{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.MyCmd{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.SubCmd{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.TagCmd{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.MessageQueue{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.ChatRoomMember{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.Model(&models.ChatRoomMember{}).AddUniqueIndex("idx_chat_no_member_no", "chat_room_serial_no", "wx_user_serial_no").Error
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = db.AutoMigrate(&models.MySubChatRoomConfig{}).Error
-		if err != nil {
-			log.Fatal(err)
-		}
+
+		migrateSql(db.Model(&models.RobotChatRoom{}).AddUniqueIndex("idx_robot_no_chat_no", "robot_serial_no", "chat_room_serial_no").Error)
+		migrateSql(db.Model(&models.ChatRoomMember{}).AddUniqueIndex("idx_chat_no_member_no", "chat_room_serial_no", "wx_user_serial_no").Error)
 		log.Println("db migrate success")
+
 		// receive queue
 		for k, v := range receiveQueueConfig {
-			client := &http.Client{}
-			b := bytes.NewBufferString("{\"auto_delete\":false,\"durable\":true,\"arguments\":[]}")
-			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), k), b)
-			if err != nil {
-				log.Fatal(err)
-			}
-			// enusre queue
-			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
-			req.Header.Add("Content-Type", "application/json")
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if resp.StatusCode != http.StatusNoContent {
-				log.Fatal(resp)
-			}
-			b = bytes.NewBufferString("{\"routing_key\":\"" + v + "\",\"arguments\":[]}")
-			// ensure binding
-			req, err = http.NewRequest("POST", fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_receive_exchange_name"), k), b)
-			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
-			req.Header.Add("Content-Type", "application/json")
-			resp, err = client.Do(req)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if resp.StatusCode != http.StatusCreated {
-				log.Fatal(resp)
-			}
-			log.Printf("queue create success: %s bind %s %s\n", k, viper.GetString("rabbitmq_receive_exchange_name"), v)
+			migrateQueue(k, viper.GetString("rabbitmq_receive_exchange_name"), v)
 		}
+
 		// message queue
 		for k, v := range messageQueueConfig {
-			client := &http.Client{}
-			b := bytes.NewBufferString("{\"auto_delete\":false,\"durable\":true,\"arguments\":[]}")
-			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/queues/%s/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), k), b)
-			if err != nil {
-				log.Fatal(err)
-			}
-			// enusre queue
-			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
-			req.Header.Add("Content-Type", "application/json")
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if resp.StatusCode != http.StatusNoContent {
-				log.Fatal(resp)
-			}
-			b = bytes.NewBufferString("{\"routing_key\":\"" + v + "\",\"arguments\":[]}")
-			// ensure binding
-			req, err = http.NewRequest("POST", fmt.Sprintf("%s/bindings/%s/e/%s/q/%s", viper.GetString("rabbitmq_api"), viper.GetString("rabbitmq_vhost"), viper.GetString("rabbitmq_message_exchange_name"), k), b)
-			req.SetBasicAuth(viper.GetString("rabbitmq_user"), viper.GetString("rabbitmq_passwd"))
-			req.Header.Add("Content-Type", "application/json")
-			resp, err = client.Do(req)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if resp.StatusCode != http.StatusCreated {
-				log.Fatal(resp)
-			}
-			log.Printf("queue create success: %s bind %s %s\n", k, viper.GetString("rabbitmq_message_exchange_name"), v)
+			migrateQueue(k, viper.GetString("rabbitmq_message_exchange_name"), v)
 		}
 	},
+}
+
+func migrateSql(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func migrateQueue(name, exchange, key string) {
+	rmqApi := viper.GetString("rabbitmq_api")
+	rmqUser := viper.GetString("rabbitmq_user")
+	rmqPasswd := viper.GetString("rabbitmq_passwd")
+	rmqVhost := viper.GetString("rabbitmq_vhost")
+	err := utils.RegisterQueue(
+		rmqApi, rmqUser, rmqPasswd, rmqVhost,
+		name, exchange, key,
+	)
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Printf("queue create success: %s bind %s %s\n", name, exchange, key)
+	}
 }
 
 func init() {

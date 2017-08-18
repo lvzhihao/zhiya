@@ -40,6 +40,7 @@ import (
 var messageQueueConfig = map[string]string{
 	"uchat.mysql.message.queue": "uchat.mysql.message.queue",
 	// global
+	"uchat.send.messages": "uchat.#",
 }
 
 // mqueueCmd represents the mqueue command
