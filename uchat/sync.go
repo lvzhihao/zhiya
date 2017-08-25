@@ -644,7 +644,19 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
 			params.Set("nav", "0")
 			params.Set("p", pid)
 			params.Set("searchText", strings.TrimSpace(key))
-			url := "http://m.xuanwonainiu.com/search?" + params.Encode()
+			//临时写死，后面需要根据不同的经销商做配置
+			searchConfig := viper.GetStringMap("taoke_search_config")
+			if config, ok := searchConfig[myId]; ok {
+				var p map[string]string
+				err := json.Unmarshal([]byte(goutils.ToString(config)), &p)
+				if err == nil {
+					for k, v := range p {
+						params.Set(k, v)
+					}
+				}
+			}
+			//end
+			url := "http://m.xuanwonainiu.com/sp-search?" + params.Encode()
 			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
 			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
 			message := &models.MessageQueue{}
