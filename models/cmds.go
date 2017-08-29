@@ -26,6 +26,7 @@ type ChatRoomCmd struct {
 	ChatRoomSerialNo string `gorm:"size:100" json:"chat_room_serial_no"`        //群编号
 	CmdType          string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
 	CmdValue         string `gorm:"size:100" json:"cmd_value"`                  //指令内容
+	CmdParams        string `gorm:"size:500" json:"cmd_params"`                 //指令参数
 	CmdReply         string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
 	IsOpen           bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
 }
@@ -35,11 +36,12 @@ type ChatRoomCmd struct {
 */
 type MyCmd struct {
 	gorm.Model
-	MyId     string `gorm:"size:100" json:"my_id"`                      //供应商ID
-	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
-	CmdValue string `gorm:"size:100" json:"cmd_value"`                  //指令内容
-	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
-	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
+	MyId      string `gorm:"size:100" json:"my_id"`                      //供应商ID
+	CmdType   string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
+	CmdValue  string `gorm:"size:100" json:"cmd_value"`                  //指令内容
+	CmdParams string `gorm:"size:500" json:"cmd_params"`                 //指令参数
+	CmdReply  string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
+	IsOpen    bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
 }
 
 /*
@@ -47,19 +49,21 @@ type MyCmd struct {
 */
 type SubCmd struct {
 	gorm.Model
-	SubId    string `gorm:"size:100" json:"sub_id"`                     //代理商ID
-	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
-	CmdValue string `gorm:"size:100" json:"cmd_value"`                  //指令内容
-	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
-	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
+	SubId     string `gorm:"size:100" json:"sub_id"`                     //代理商ID
+	CmdType   string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
+	CmdValue  string `gorm:"size:100" json:"cmd_value"`                  //指令内容
+	CmdParams string `gorm:"size:500" json:"cmd_params"`                 //指令参数
+	CmdReply  string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
+	IsOpen    bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
 }
 
 // TAG指令
 type TagCmd struct {
 	gorm.Model
-	TagId    string `gorm:"size:100" json:"tag_id"`                     //分组TAG
-	CmdType  string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
-	CmdValue string `gorm:"size:100" json:"cmd_value"`                  //指令内容
-	CmdReply string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
-	IsOpen   bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
+	TagId     string `gorm:"size:100" json:"tag_id"`                     //分组TAG
+	CmdType   string `gorm:"size:50;index:idx_cmd_type" json:"cmd_type"` //指令类型
+	CmdValue  string `gorm:"size:100" json:"cmd_value"`                  //指令内容
+	CmdParams string `gorm:"size:500" json:"cmd_params"`                 //指令参数
+	CmdReply  string `gorm:"type:text(10000)" json:"cmd_reply"`          //指令回复
+	IsOpen    bool   `gorm:"index:idx_is_open" json:"is_open"`           //是否启用
 }

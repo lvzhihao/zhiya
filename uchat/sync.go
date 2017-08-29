@@ -593,20 +593,61 @@ func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 		var robotChatRoom models.RobotChatRoom
 		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
 		if robotChatRoom.MyId != "" { //有绑定供应商
-			pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+			err := SendShopCustomSearch(robotChatRoom.MyId, robotChatRoom.SubId, robotChatRoom.ChatRoomSerialNo, content, db)
+			//如果没有自定义配置
 			if err != nil {
-				log.Println(err)
-				continue
-			}
-			err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
-			//如果已经匹配关键字则不用再去搜索优惠链接
-			if err != nil {
-				err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
-				log.Println(err)
+				pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+				//如果已经匹配关键字则不用再去搜索优惠链接
+				if err != nil {
+					err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+					log.Println(err)
+				}
 			}
 		}
 	}
 	return nil
+}
+
+func SendShopCustomSearch(myId, subId, chatRoomSerialNo, content string, db *gorm.DB) error {
+	var rst struct {
+		gorm.Model
+		CmdValue  string
+		CmdReply  string
+		CmdParams string
+	}
+	if subId != "" {
+		db.Table(viper.GetString("table_prefix")+"_sub_cmds").Where("sub_id = ?", subId).Where("cmd_type = ?", "shop.custom.search").Where("is_open = 1").First(&rst)
+	}
+	if rst.ID == 0 {
+		db.Table(viper.GetString("table_prefix")+"_my_cmds").Where("my_id = ?", myId).Where("cmd_type = ?", "shop.custom.search").Where("is_open = 1").First(&rst)
+	}
+	if rst.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(rst.CmdValue)) == 0 {
+		key := strings.TrimSpace(strings.Replace(content, rst.CmdValue, "", 1))
+		keyList := strings.Split(strings.TrimSpace(rst.CmdParams), "|")
+		if goutils.InStringSlice(keyList, key) {
+			message := &models.MessageQueue{}
+			message.ChatRoomSerialNoList = chatRoomSerialNo
+			message.ChatRoomCount = 1
+			message.MsgType = "2001"
+			message.IsHit = true
+			message.WeixinSerialNo = ""
+			message.MsgContent = rst.CmdReply
+			message.SendType = 1
+			message.SendStatus = 0
+			err := db.Create(message).Error
+			if err != nil {
+				return err
+			}
+			message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+			return db.Save(message).Error
+		}
+	}
+	return errors.New("no shop.custom.search config")
 }
 
 /*

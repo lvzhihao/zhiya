@@ -21,6 +21,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/jinzhu/gorm"
@@ -44,6 +45,10 @@ var InitCmdTypeValues = `
 		{
 			"type_flag": "alimama.coupon.search",
 			"type_name": "淘客优惠搜索"
+		},
+		{
+			"type_flag": "shop.custom.search",
+			"type_name": "客户自定义搜索"
 		}
 	]
 `
@@ -90,6 +95,21 @@ var migrateCmd = &cobra.Command{
 		migrateSql(db.Model(&models.RobotChatRoom{}).AddUniqueIndex("idx_robot_no_chat_no", "robot_serial_no", "chat_room_serial_no").Error)
 		migrateSql(db.Model(&models.ChatRoomMember{}).AddUniqueIndex("idx_chat_no_member_no", "chat_room_serial_no", "wx_user_serial_no").Error)
 		log.Println("db migrate success")
+
+		// ensure cmd type data
+		var initCmdType []models.CmdType
+		err = json.Unmarshal([]byte(InitCmdTypeValues), &initCmdType)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, v := range initCmdType {
+			err := v.Ensure(db, v.TypeFlag)
+			if err != nil {
+				log.Fatal(err)
+			}
+			db.Save(&v)
+		}
+		log.Println("data init success")
 
 		// receive queue
 		for k, v := range receiveQueueConfig {

@@ -48,9 +48,9 @@ var receiveQueueConfig = map[string]string{
 	"uchat.chat.keyword":          uchat.ReceiveMQChatKeyword,
 	"uchat.chat.redpack":          uchat.ReceiveMQChatRedpack,
 	// global
-	"uchat.log":                      "uchat.#",            //global log
-	"uchat.messages":                 "uchat.chat.message", //message log
-	"uchat.messages.msgpack.process": "uchat.chat.message", //message process
+	"uchat.log":      "uchat.#",            //global log
+	"uchat.messages": "uchat.chat.message", //message log
+	//"uchat.messages.msgpack.process": "uchat.chat.message", //message process
 }
 
 var receiveActConfig = map[string]string{

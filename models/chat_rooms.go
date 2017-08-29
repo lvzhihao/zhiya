@@ -45,6 +45,7 @@ type RobotChatRoom struct {
 	SubId            string `gorm:"size:100;index:idx_sub_id" json:"sub_id"`  //代理商ID
 	TagId            string `gorm:"size:100;index:idx_tag_id" json:"tag_id"`  //分组TAG
 	OpenTuling       bool   `gorm:"index:idx_open_tuling" json:"open_tuling"` //是否启用图片机器人
+	OpenSignin       bool   `gorm:"index:idx_open_signin" json:"open_singin"` //是否启用签到功能
 }
 
 /*
