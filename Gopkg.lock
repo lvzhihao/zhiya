@@ -21,6 +21,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/golang/protobuf"
+  packages = ["proto"]
+  revision = "ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "392dba7d905ed5d04a5794ba89f558b27e2ba1ca"
@@ -98,6 +104,18 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/qiniu/api.v7"
+  packages = ["auth/qbox","storage"]
+  revision = "5c2af6a4373998c9553eb3679d86ff2c47d9de0a"
+  version = "v7.2.1"
+
+[[projects]]
+  name = "github.com/qiniu/x"
+  packages = ["bytes.v7","bytes.v7/seekable","rpc.v7","xlog.v7"]
+  revision = "946c4a16076d6d98aeb78619e2bd4012357f7228"
+  version = "v7.0.8"
+
+[[projects]]
   name = "github.com/speps/go-hashids"
   packages = ["."]
   revision = "d1d57a886aa7e3ef6092b70ceab077e35ee8e0ce"
@@ -164,6 +182,12 @@
   revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
 
 [[projects]]
+  name = "github.com/vmihailenco/msgpack"
+  packages = [".","codes"]
+  revision = "de4b4857c10538d591bee30e8114176008f8b9d0"
+  version = "v3.1.2"
+
+[[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
   revision = "4e336646b2ef9fc6e47be8e21594178f98e5ebcf"
@@ -189,6 +213,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  revision = "66aacef3dd8a676686c7ae3716979581e8b03c47"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
   revision = "9f7170bcd8e9f4d3691c06401119c46a769a1e03"
@@ -200,14 +230,26 @@
   revision = "e56139fd9c5bc7244c76116c68e500765bb6db6b"
 
 [[projects]]
+  name = "google.golang.org/appengine"
+  packages = [".","datastore","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api"]
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "eb3733d160e74a9c7e442f435eb3bea458e1d19f"
 
+[[projects]]
+  name = "qiniupkg.com/x"
+  packages = ["bytes.v7","log.v7","reqid.v7"]
+  revision = "8fdcb89a80ae34e50b752c0dace258eb0256d2d8"
+  version = "v7.0.7"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "522ac06ecd7b2e2a98613a7d22d1ade550ed49a1e886d6e0425864e532fb4212"
+  inputs-digest = "35aa9a5fe064017f7820bcebff109be0a7bab5c4d5df99ebcd104bc4a8d1b15c"
   solver-name = "gps-cdcl"
   solver-version = 1
