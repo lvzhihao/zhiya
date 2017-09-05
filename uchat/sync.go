@@ -684,7 +684,7 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
 			params.Set("nav", "0")
 			params.Set("p", pid)
 			params.Set("searchText", strings.TrimSpace(key))
-			//临时写死，后面需要根据不同的经销商做配置
+			//销商配置
 			searchConfig := viper.GetStringMap("taoke_search_config")
 			if config, ok := searchConfig[myId]; ok {
 				var p map[string]string
@@ -696,7 +696,13 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
 				}
 			}
 			//end
-			url := "http://m.xuanwonainiu.com/sp-search?" + params.Encode()
+			//temp change
+			var url string
+			if myId == "20546" {
+				url = "http://m.xuanwonainiu.com/search?" + params.Encode()
+			} else {
+				url = "http://m.xuanwonainiu.com/sp-search?" + params.Encode()
+			}
 			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
 			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
 			message := &models.MessageQueue{}
