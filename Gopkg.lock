@@ -202,8 +202,8 @@
 [[projects]]
   name = "go.uber.org/zap"
   packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
-  revision = "9d9d6135afe89b6fc4a05e9a8552526caba38048"
-  version = "v1.5.0"
+  revision = "3216c4c73e8ebbafff73c456dd27143f4a7c1f94"
+  version = "v1.6.0"
 
 [[projects]]
   branch = "master"

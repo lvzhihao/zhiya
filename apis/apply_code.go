@@ -45,28 +45,50 @@ func init() {
 }
 
 // 获取验证码
-func FetchApplyCode(db *gorm.DB, myId, subId string) (*models.RobotApplyCode, error) {
+func FetchApplyCode(db *gorm.DB, myId, subId, robotSerialNo, limit string) (*models.RobotApplyCode, error) {
 	// myId 不得为空
 	if myId == "" {
 		return nil, errors.New("error my_id")
 	}
-	// 获取已经存在的验证码，如果有则直接返回
-	exists, err := models.FindVaildApplyCodeByMyId(DB, myId, subId)
-	if err == nil && len(exists) > 0 {
-		return &exists[0], nil
+	if robotSerialNo == "" {
+		// 获取已经存在的验证码，如果有则直接返回
+		exists, err := models.FindVaildApplyCodeByMyId(DB, myId, subId)
+		if err == nil && len(exists) > 0 {
+			return &exists[0], nil
+		}
+	} else {
+		// 获取已经存在的验证码，如果有则直接返回
+		exists, err := models.FindVaildApplyCodeByMyIdAndRobot(DB, myId, subId, robotSerialNo)
+		if err == nil && len(exists) > 0 {
+			return &exists[0], nil
+		}
 	}
 	// todo check subid chatroom limit
 
-	// 查找此用户可用机器人
-	robots, err := models.FindValidRobotByMyId(DB, myId)
+	limitNum := 10
+	if limit != "" {
+		limitNum = int(goutils.ToInt(limit))
+	}
+
+	// 查找此用户可用当天加群机器人
+	robots, err := models.FindValidCodeRobotByMyId(DB, myId, limitNum)
 	if err != nil {
 		return nil, err
 	}
 
 	//随机选取一个机器人
 	numn := rand.Intn(len(robots))
+	sendRobotSerialNo := robots[numn].SerialNo
+	for _, r := range robots {
+		//如果有，则用指定的robotserialNo
+		if r.SerialNo == robotSerialNo {
+			sendRobotSerialNo = r.SerialNo
+			break
+		}
+	}
+
 	params := map[string]string{
-		"vcRobotSerialNo":    robots[numn].SerialNo, //todo
+		"vcRobotSerialNo":    sendRobotSerialNo,
 		"nType":              "10",
 		"vcChatRoomSerialNo": "",
 		"nCodeCount":         "1",
@@ -108,8 +130,10 @@ RUSTAPI ApplyCode
 func ApplyCode(ctx echo.Context) error {
 	myId := ctx.FormValue("my_id")
 	subId := ctx.FormValue("sub_id")
+	robotSerialNo := ctx.FormValue("robot_serial_no")
+	limit := ctx.FormValue("limit")
 
-	applyCode, err := FetchApplyCode(DB, myId, subId)
+	applyCode, err := FetchApplyCode(DB, myId, subId, robotSerialNo, limit)
 	if err != nil {
 		return ctx.JSON(http.StatusOK, Result{
 			Code:  "000001",

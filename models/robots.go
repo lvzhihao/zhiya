@@ -60,3 +60,23 @@ func FindValidRobotByMyId(db *gorm.DB, myId string) (list []Robot, err error) {
 	}
 	return
 }
+
+func FindValidCodeRobotByMyId(db *gorm.DB, myId string, limit int) (list []Robot, err error) {
+	robots, err := FindValidRobotByMyId(db, myId)
+	if err != nil {
+		return robots, err
+	}
+	for _, r := range robots {
+		count := 0
+		//limit used / day
+		db.Model(&RobotApplyCode{}).Where("robot_serial_no = ?", r.SerialNo).Where("used = ?", 1).Where("DATE(created_at) = CURDATE()").Count(&count)
+		if count < limit {
+			list = append(list, r)
+		}
+	}
+	if len(list) == 0 {
+		// 如果没有空的设备，同样返回错误
+		err = errors.New("no valid robots")
+	}
+	return
+}

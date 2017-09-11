@@ -28,7 +28,15 @@ type RobotApplyCode struct {
   根据供应商查找当前可用的验证码
 */
 func FindVaildApplyCodeByMyId(db *gorm.DB, myId, subId string) (list []RobotApplyCode, err error) {
-	err = db.Where("expire_time >= ?", time.Now()).Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("used = ?", 0).Order("expire_time desc").Find(&list).Error
+	err = db.Where("expire_time >= CURTIME()").Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("used = ?", 0).Order("expire_time desc").Find(&list).Error
+	return
+}
+
+/*
+  根据供应商查找当前可用的验证码
+*/
+func FindVaildApplyCodeByMyIdAndRobot(db *gorm.DB, myId, subId, robotSerialNo string) (list []RobotApplyCode, err error) {
+	err = db.Where("expire_time >= CURTIME()").Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("used = ?", 0).Where("robot_serial_no = ?", robotSerialNo).Order("expire_time desc").Find(&list).Error
 	return
 }
 
