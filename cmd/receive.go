@@ -48,8 +48,9 @@ var receiveQueueConfig = map[string]string{
 	"uchat.chat.keyword":          uchat.ReceiveMQChatKeyword,
 	"uchat.chat.redpack":          uchat.ReceiveMQChatRedpack,
 	// global
-	"uchat.log":      "uchat.#",            //global log
-	"uchat.messages": "uchat.chat.message", //message log
+	"uchat.log":                 "uchat.#",                  //global log
+	"uchat.messages":            "uchat.chat.message",       //message log
+	"uchat.send.messages.error": "uchat.send.message.error", //send message error
 	//"uchat.messages.msgpack.process": "uchat.chat.message", //message process
 }
 
@@ -65,6 +66,7 @@ var receiveActConfig = map[string]string{
 	"saysum":         uchat.ReceiveMQMemberMessageSum,
 	"msg":            uchat.ReceiveMQRobotPrivateMessage,
 	"readpack":       uchat.ReceiveMQChatRedpack,
+	"send_msg_error": "uchat.send.message.error",
 }
 
 // receiveCmd represents the receive command
