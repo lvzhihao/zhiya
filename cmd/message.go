@@ -26,7 +26,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/lvzhihao/zhiya/uchat"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -57,7 +57,7 @@ to quickly create a Cobra application.`,
 }
 
 func processMessage(msg amqp.Delivery) {
-	ret, err := uchat.ConvertUchatMessage(msg.Body)
+	ret, err := uchatlib.ConvertUchatMessage(msg.Body)
 	if err != nil {
 		msg.Ack(false)
 		Logger.Error("process error", zap.Error(err), zap.Any("msg", msg))

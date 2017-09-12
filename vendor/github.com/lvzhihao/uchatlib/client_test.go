@@ -1,6 +1,7 @@
-package uchat
+package uchatlib
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/lvzhihao/goutils"
@@ -10,8 +11,14 @@ var testClient *UchatClient
 var testRobot map[string]string
 var testChatRooms []map[string]string
 
+var testMarchantNo string
+var testMmarchantSecret string
+
 func init() {
-	testClient = NewClient("201705311010001", "123123")
+	flag.StringVar(&testMarchantNo, "no", "", "marchantNo")
+	flag.StringVar(&testMmarchantSecret, "secret", "", "marchantSecret")
+	flag.Parse()
+	testClient = NewClient(testMarchantNo, testMmarchantSecret)
 }
 
 func Test_001_RobotList(t *testing.T) {

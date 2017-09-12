@@ -1,4 +1,4 @@
-package uchat
+package uchatlib
 
 /*
   关群调用

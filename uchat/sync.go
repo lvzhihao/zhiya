@@ -13,17 +13,32 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/tuling"
 	"github.com/lvzhihao/zhiya/utils"
+	hashids "github.com/speps/go-hashids"
 	"github.com/spf13/viper"
 )
+
+var (
+	DefaultMemberJoinWelcome string = ""
+	HashID                   *hashids.HashID
+)
+
+//初始化hashids
+func InitHashIds(salt string, minLen int) {
+	hd := hashids.NewData()
+	hd.Salt = salt
+	hd.MinLength = minLen
+	HashID = hashids.NewWithData(hd)
+}
 
 /*
   同步设备列表
   支持重复调用
 */
-func SyncRobots(client *UchatClient, db *gorm.DB) error {
+func SyncRobots(client *uchatlib.UchatClient, db *gorm.DB) error {
 	rst, err := client.RobotList()
 	if err != nil {
 		return err
@@ -54,7 +69,7 @@ func SyncRobots(client *UchatClient, db *gorm.DB) error {
   同步群会员信息
   支持重复调用
 */
-func SyncChatRoomMembers(chatRoomSerialNo string, client *UchatClient) error {
+func SyncChatRoomMembers(chatRoomSerialNo string, client *uchatlib.UchatClient) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	return client.ChatRoomUserInfo(ctx)
@@ -124,7 +139,7 @@ func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
 	同步群状态
 	支持重复调用
 */
-func SyncChatRoomStatus(chatRoomSerialNo string, client *UchatClient, db *gorm.DB) error {
+func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, db *gorm.DB) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	rst, err := client.ChatRoomStatus(ctx)
@@ -148,7 +163,7 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *UchatClient, db *gorm.D
   同步设备开群信息
   支持重复调用
 */
-func SyncRobotChatRooms(RobotSerialNo string, client *UchatClient, db *gorm.DB) error {
+func SyncRobotChatRooms(RobotSerialNo string, client *uchatlib.UchatClient, db *gorm.DB) error {
 	ctx := make(map[string]string, 0)
 	ctx["vcRobotSerialNo"] = RobotSerialNo
 	rst, err := client.ChatRoomList(ctx)
@@ -251,7 +266,7 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
   同步开群通知回调
   支持重复调用
 */
-func SyncChatRoomCreateCallback(b []byte, client *UchatClient, db *gorm.DB) error {
+func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -301,7 +316,7 @@ func SyncChatRoomCreateCallback(b []byte, client *UchatClient, db *gorm.DB) erro
 		// sync member info
 		SyncChatRoomMembers(chatRoomSerialNo, client)
 		// open get message
-		log.Println(SetChatRoomOpenGetMessage(chatRoomSerialNo, client))
+		log.Println(uchatlib.SetChatRoomOpenGetMessage(chatRoomSerialNo, client))
 	}
 	return nil
 }
@@ -801,7 +816,7 @@ func ShortUrl(link string) string {
 	return goutils.ToString(links[0]["url_short"])
 }
 
-func SyncChatOverCallback(b []byte, client *UchatClient) error {
+func SyncChatOverCallback(b []byte, client *uchatlib.UchatClient) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -811,5 +826,5 @@ func SyncChatOverCallback(b []byte, client *UchatClient) error {
 	if !ok {
 		return errors.New("no chatRoomeSerialNo")
 	}
-	return SetChatRoomOver(goutils.ToString(rst["chat_room_serial_no"]), "pc user", client)
+	return uchatlib.SetChatRoomOver(goutils.ToString(rst["chat_room_serial_no"]), "pc user", client)
 }

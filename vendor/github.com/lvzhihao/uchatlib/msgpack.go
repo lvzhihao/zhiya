@@ -1,4 +1,4 @@
-package uchat
+package uchatlib
 
 import (
 	"encoding/base64"

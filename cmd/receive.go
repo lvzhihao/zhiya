@@ -29,6 +29,7 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
@@ -78,7 +79,7 @@ var receiveCmd = &cobra.Command{
 		defer Logger.Sync()
 		app := goutils.NewEcho()
 		//app.Logger.SetLevel(log.INFO)
-		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
+		client := uchatlib.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 		routeKeys := []string{}
 		for _, route := range receiveActConfig {
 			routeKeys = append(routeKeys, route)

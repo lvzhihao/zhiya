@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/jinzhu/gorm"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
@@ -87,14 +88,14 @@ var uchatCmd = &cobra.Command{
 type consumerShell struct {
 	db        *gorm.DB
 	managerDB *gorm.DB
-	client    *uchat.UchatClient
+	client    *uchatlib.UchatClient
 	sendTool  *utils.ReceiveTool
 }
 
 func (c *consumerShell) Init() (err error) {
 	c.db, err = gorm.Open("mysql", viper.GetString("mysql_dns"))
 	c.managerDB, err = gorm.Open("mysql", viper.GetString("manager_mysql_dns"))
-	c.client = uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
+	c.client = uchatlib.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		return viper.GetString("table_prefix") + "_" + defaultTableName
 	}

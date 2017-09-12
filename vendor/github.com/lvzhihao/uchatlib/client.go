@@ -1,4 +1,4 @@
-package uchat
+package uchatlib
 
 import (
 	"bytes"
@@ -12,22 +12,11 @@ import (
 	"time"
 
 	"github.com/lvzhihao/goutils"
-	hashids "github.com/speps/go-hashids"
 )
 
 var (
-	UchatApiPrefix           string = "http://skyagent.shequnguanjia.com/Merchant.asmx"
-	DefaultMemberJoinWelcome string = ""
-	HashID                   *hashids.HashID
+	UchatApiPrefix string = "http://skyagent.shequnguanjia.com/Merchant.asmx"
 )
-
-//初始化hashids
-func InitHashIds(salt string, minLen int) {
-	hd := hashids.NewData()
-	hd.Salt = salt
-	hd.MinLength = minLen
-	HashID = hashids.NewWithData(hd)
-}
 
 // 小U机器客户端
 type UchatClient struct {

@@ -25,8 +25,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/apis"
-	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,7 +42,7 @@ var apiCmd = &cobra.Command{
 		defer Logger.Sync()
 		//app.Logger.SetLevel(log.INFO)
 		app := goutils.NewEcho()
-		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
+		client := uchatlib.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 		db, err := gorm.Open("mysql", viper.GetString("mysql_dns"))
 		if err != nil {
 			Logger.Sugar().Fatal(err)

@@ -18,6 +18,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/lvzhihao/zhiya/utils"
@@ -27,9 +28,9 @@ import (
 )
 
 var (
-	DB                        *gorm.DB           //数据库
-	Logger                    *zap.Logger        //日志
-	Client                    *uchat.UchatClient //uchat客户端
+	DB                        *gorm.DB              //数据库
+	Logger                    *zap.Logger           //日志
+	Client                    *uchatlib.UchatClient //uchat客户端
 	Tool                      *utils.ReceiveTool
 	DefaultApplyCodeAddMinute string = "10" //默认验证码有效时间
 )
@@ -165,7 +166,7 @@ func SyncRobots(ctx echo.Context) error {
 func OverChatRoom(ctx echo.Context) error {
 	serialNo := ctx.FormValue("serial_no")
 	comment := ctx.FormValue("comment")
-	err := uchat.SetChatRoomOver(serialNo, comment, Client)
+	err := uchatlib.SetChatRoomOver(serialNo, comment, Client)
 	if err != nil {
 		return ctx.JSON(http.StatusOK, Result{
 			Code:  "000003",
@@ -191,7 +192,7 @@ func ChatRoomMemberJoinWelcome(ctx echo.Context) error {
 func RobotAddUser(ctx echo.Context) error {
 	robotSerialNo := ctx.FormValue("robot_serial_no")
 	userWeixinId := ctx.FormValue("user_weixin_id")
-	err := uchat.ApplyRobotAddUser(robotSerialNo, userWeixinId, Client)
+	err := uchatlib.ApplyRobotAddUser(robotSerialNo, userWeixinId, Client)
 	if err != nil {
 		return ctx.JSON(http.StatusOK, Result{
 			Code:  "000004",

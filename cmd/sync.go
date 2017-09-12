@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/spf13/cobra"
@@ -51,7 +52,7 @@ var syncCmd = &cobra.Command{
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 			return viper.GetString("table_prefix") + "_" + defaultTableName
 		}
-		client := uchat.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
+		client := uchatlib.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 		switch action {
 		case "robot":
 			if err := uchat.SyncRobots(client, db); err == nil {
