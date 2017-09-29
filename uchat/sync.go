@@ -670,14 +670,14 @@ func SendShopCustomSearch(myId, subId, chatRoomSerialNo, content string, db *gor
 func FetchAlimamaSearchPid(myId, subId string, db *gorm.DB) (string, error) {
 	if subId != "" {
 		pid := ""
-		row := db.Table("sdb_maifou_promotion_detail").Where("supplier_id = ?", myId).Where("shop_id = ?", subId).Select("pid").Row()
+		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "taoke").Where("supplier_id = ?", myId).Where("shop_id = ?", subId).Select("pid").Row()
 		row.Scan(&pid)
 		if pid != "" {
 			return pid, nil
 		}
 	} else {
 		pid := ""
-		row := db.Table("sdb_maifou_promotion_detail").Where("supplier_id = ?", myId).Where("is_self = ?", true).Select("pid").Row()
+		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "taoke").Where("supplier_id = ?", myId).Where("is_self = ?", true).Select("pid").Row()
 		row.Scan(&pid)
 		if pid != "" {
 			return pid, nil
