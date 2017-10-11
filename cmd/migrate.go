@@ -21,8 +21,11 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -111,6 +114,10 @@ var migrateCmd = &cobra.Command{
 		}
 		log.Println("data init success")
 
+		// exchange
+		migrateExchange(viper.GetString("rabbitmq_message_exchange_name"))
+		migrateExchange(viper.GetString("rabbitmq_receive_exchange_name"))
+
 		// message queue
 		for k, v := range messageQueueConfig {
 			migrateQueue(k, viper.GetString("rabbitmq_message_exchange_name"), v)
@@ -122,6 +129,30 @@ func migrateSql(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func migrateExchange(exchange string) {
+	api := viper.GetString("rabbitmq_api")
+	user := viper.GetString("rabbitmq_user")
+	passwd := viper.GetString("rabbitmq_passwd")
+	vhost := viper.GetString("rabbitmq_vhost")
+	client := &http.Client{}
+	b := bytes.NewBufferString(`{"type":"topic","auto_delete":false,"durable":true,"internal":false,"arguments":[]}`)
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/exchanges/%s/%s", api, vhost, exchange), b)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// enusre queue
+	req.SetBasicAuth(user, passwd)
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		log.Fatal(fmt.Sprintf("CreateExchange StatusError: %d, %v", resp.StatusCode, resp))
+	}
+	log.Printf("exchage create success: %s\n", exchange)
 }
 
 func migrateQueue(name, exchange, key string) {
