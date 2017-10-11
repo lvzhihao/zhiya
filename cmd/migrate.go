@@ -111,11 +111,6 @@ var migrateCmd = &cobra.Command{
 		}
 		log.Println("data init success")
 
-		// receive queue
-		for k, v := range receiveQueueConfig {
-			migrateQueue(k, viper.GetString("rabbitmq_receive_exchange_name"), v)
-		}
-
 		// message queue
 		for k, v := range messageQueueConfig {
 			migrateQueue(k, viper.GetString("rabbitmq_message_exchange_name"), v)
