@@ -282,10 +282,12 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		return err
 	}
 	for _, v := range list {
-		applyCode, err := models.ApplyCodeUsed(db, goutils.ToString(v["vcApplyCodeSerialNo"]))
-		if err != nil {
-			return err
-		}
+		applyCode, applyCodeerr := models.ApplyCodeUsed(db, goutils.ToString(v["vcApplyCodeSerialNo"]))
+		/*
+			if err != nil {
+				return err
+			}
+		*/
 		room := models.ChatRoom{}
 		chatRoomSerialNo := goutils.ToString(v["vcChatRoomSerialNo"])
 		err = room.Ensure(db, chatRoomSerialNo)
@@ -306,8 +308,10 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		if err != nil {
 			return err
 		}
-		robotRoom.MyId = applyCode.MyId
-		robotRoom.SubId = applyCode.SubId
+		if applyCodeerr == nil {
+			robotRoom.MyId = applyCode.MyId
+			robotRoom.SubId = applyCode.SubId
+		} //如果有applyCode记录，可确定开群申请时的供应商和店铺身份
 		robotRoom.IsOpen = true
 		robotRoom.ExpiredDate = time.Now().Add(7 * 24 * time.Hour)
 		err = db.Save(&robotRoom).Error
