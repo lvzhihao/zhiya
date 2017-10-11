@@ -309,6 +309,7 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		robotRoom.MyId = applyCode.MyId
 		robotRoom.SubId = applyCode.SubId
 		robotRoom.IsOpen = true
+		robotRoom.ExpiredDate = time.Now().Add(7 * 24 * time.Hour)
 		err = db.Save(&robotRoom).Error
 		if err != nil {
 			return err
