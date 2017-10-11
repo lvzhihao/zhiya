@@ -149,10 +149,11 @@ func migrateExchange(exchange string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if resp.StatusCode != http.StatusNoContent {
+	if (resp.StatusCode == http.StatusNoContent) || (resp.StatusCode == http.StatusCreated) {
+		log.Printf("exchage create success: %s\n", exchange)
+	} else {
 		log.Fatal(fmt.Sprintf("CreateExchange StatusError: %d, %v", resp.StatusCode, resp))
 	}
-	log.Printf("exchage create success: %s\n", exchange)
 }
 
 func migrateQueue(name, exchange, key string) {
