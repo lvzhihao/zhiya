@@ -74,6 +74,23 @@ var InitDBModel = []interface{}{
 	&models.TulingConfig{},        //图灵机器人配置
 }
 
+var receiveQueueConfig = map[string]string{
+	"uchat.member.list":           "uchat.member.list",
+	"uchat.member.join":           "uchat.member.join",
+	"uchat.member.quit":           "uchat.member.quit",
+	"uchat.member.message_sum":    "uchat.member.message.sum",
+	"uchat.chat.create":           "uchat.chat.create",
+	"uchat.chat.message":          "uchat.chat.message",
+	"uchat.chat.keyword":          "uchat.chat.keywork",
+	"uchat.chat.redpack":          "uchat.chat.redpack",
+	"uchat.robot.chat.list":       "uchat.robot.chat.list",
+	"uchat.robot.chat.join":       "uchat.robot.chat.join",
+	"uchat.robot.message.private": "uchat.robot.message.private",
+	"uchat.robot.deny":            "uchat.robot.deny",
+	"uchat.send.messages.error":   "uchat.send.messages.error",
+	"uchat.log":                   "uchat.#",
+}
+
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
@@ -116,7 +133,11 @@ var migrateCmd = &cobra.Command{
 
 		// exchange
 		migrateExchange(viper.GetString("rabbitmq_message_exchange_name"))
-		migrateExchange(viper.GetString("rabbitmq_receive_exchange_name"))
+
+		// receive queue
+		for k, v := range receiveQueueConfig {
+			migrateQueue(k, viper.GetString("rabbitmq_receive_exchange_name"), v)
+		}
 
 		// message queue
 		for k, v := range messageQueueConfig {
