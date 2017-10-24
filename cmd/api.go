@@ -22,8 +22,10 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/jinzhu/gorm"
+	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/apis"
@@ -65,6 +67,9 @@ var apiCmd = &cobra.Command{
 		apis.Client = client
 		apis.Tool = tool
 		// action
+		app.POST("/api/ping", func(ctx echo.Context) error {
+			return ctx.String(http.StatusOK, "pong")
+		})
 		app.POST("/api/applycode", apis.ApplyCode)
 		app.POST("/api/syncrobots", apis.SyncRobots)
 		app.POST("/api/overchatroom", apis.OverChatRoom)
