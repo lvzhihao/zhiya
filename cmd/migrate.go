@@ -81,7 +81,7 @@ var receiveQueueConfig = map[string]string{
 	"uchat.member.message_sum":    "uchat.member.message.sum",
 	"uchat.chat.create":           "uchat.chat.create",
 	"uchat.chat.message":          "uchat.chat.message",
-	"uchat.chat.keyword":          "uchat.chat.keywork",
+	"uchat.chat.keyword":          "uchat.chat.keyword",
 	"uchat.chat.redpack":          "uchat.chat.redpack",
 	"uchat.robot.chat.list":       "uchat.robot.chat.list",
 	"uchat.robot.chat.join":       "uchat.robot.chat.join",
