@@ -1,4 +1,4 @@
-FROM golang:1.9.1
+FROM golang:1.9
 
 COPY . /go/src/github.com/lvzhihao/zhiya 
 
