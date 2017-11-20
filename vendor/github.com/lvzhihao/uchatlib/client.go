@@ -232,3 +232,12 @@ func (c *UchatClient) RobotAddUser(ctx map[string]string) error {
 	_, err := c.Do(UchatApiPrefix+"/RobotAddUser", ctx)
 	return err
 }
+
+/*
+ 群内踢人接口
+*/
+func (c *UchatClient) ChatRoomKicking(ctx map[string]string) error {
+	ctx["MerchantNo"] = c.MarchantNo
+	_, err := c.Do(UchatApiPrefix+"/ChatRoomKicking", ctx)
+	return err
+}

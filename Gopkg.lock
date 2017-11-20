@@ -71,7 +71,7 @@
   branch = "master"
   name = "github.com/lvzhihao/uchatlib"
   packages = ["."]
-  revision = "4db9f047b1d0ec320a1fc82377d3f3b2b18ef56d"
+  revision = "a9914e39abb4ae4fe4011dc6f89e6fc349cafbcc"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -256,6 +256,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9d7acc6e03834a78e67672eeba819f07e7fc0ff85b990e9521d3fd3969a6c6e7"
+  inputs-digest = "9208b7fa252dc6308b232874641e913ff1ca60355567a58d0177aa948bdb999c"
   solver-name = "gps-cdcl"
   solver-version = 1
