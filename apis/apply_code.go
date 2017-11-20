@@ -190,14 +190,13 @@ func ChatRoomMemberJoinWelcome(ctx echo.Context) error {
 }
 
 func ChatRoomKicking(ctx echo.Context) error {
-	post := make(map[string]string, 0)
-	post["vcChatRoomSerialNo"] = ctx.FormValue("chat_room_serial_no")
-	post["vcXxUserSerialNo"] = ctx.FormValue("wx_user_serial_no")
-	post["vcComment"] = ctx.FormValue("comment")
-	err := uchatlib.ChatRoomKicking(post)
+	chatRoomSerialNo := ctx.FormValue("chat_room_serial_no")
+	wxUserSerialNo := ctx.FormValue("wx_user_serial_no")
+	comment := ctx.FormValue("comment")
+	err := uchatlib.ApplyChatRoomKicking(goutils.RandStr(20), chatRoomSerialNo, wxUserSerialNo, comment, Client)
 	if err != nil {
 		return ctx.JSON(http.StatusOK, Result{
-			Code:  "000009",
+			Code:  "000010",
 			Error: err.Error(),
 		})
 	} else {

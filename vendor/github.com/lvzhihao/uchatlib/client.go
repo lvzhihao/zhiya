@@ -44,7 +44,7 @@ type UchatClient struct {
 type UchatClientResult struct {
 	Result string        `json:"nResult"`
 	Error  string        `json:"vcResult"`
-	Data   []interface{} `json:"data"`
+	Data   []interface{} `json:"Data"`
 }
 
 /*
@@ -236,8 +236,10 @@ func (c *UchatClient) RobotAddUser(ctx map[string]string) error {
 /*
  群内踢人接口
 */
-func (c *UchatClient) ChatRoomKicking(ctx map[string]string) error {
+func (c *UchatClient) ChatRoomKicking(kicks []map[string]string) error {
+	ctx := make(map[string]interface{}, 0)
 	ctx["MerchantNo"] = c.MarchantNo
+	ctx["Data"] = kicks
 	_, err := c.Do(UchatApiPrefix+"/ChatRoomKicking", ctx)
 	return err
 }
