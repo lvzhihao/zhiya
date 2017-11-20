@@ -68,8 +68,28 @@ func Test_003_ChatRoomList(t *testing.T) {
 	}
 }
 
-func Test_004_ChatRoomUserInfo(t *testing.T) {
+func Test_004_ChatRoomStatus(t *testing.T) {
+	for k, v := range testChatRooms {
+		ctx := make(map[string]string, 0)
+		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
+		data, err := testClient.ChatRoomStatus(ctx)
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log(data)
+			testChatRooms[k]["nRobotInStatus"] = data["nRobotInStatus"]
+			testChatRooms[k]["nRobotStatus"] = data["nRobotStatus"]
+			testChatRooms[k]["nStatus"] = data["nStatus"]
+			t.Log("success")
+		}
+	}
+}
+
+func Test_005_ChatRoomUserInfo(t *testing.T) {
 	for _, v := range testChatRooms {
+		if v["nRobotInStatus"] == "1" {
+			continue
+		}
 		ctx := make(map[string]string, 0)
 		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
 		//ctx["vcChatRoomSerialNo"] = "201706141050000018"
@@ -82,7 +102,7 @@ func Test_004_ChatRoomUserInfo(t *testing.T) {
 	}
 }
 
-func Test_005_ChatRoomCloseGetMessage(t *testing.T) {
+func Test_006_ChatRoomCloseGetMessage(t *testing.T) {
 	for _, v := range testChatRooms {
 		ctx := make(map[string]string, 0)
 		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
@@ -95,7 +115,7 @@ func Test_005_ChatRoomCloseGetMessage(t *testing.T) {
 	}
 }
 
-func Test_006_ChatRoomOpenGetMessage(t *testing.T) {
+func Test_007_ChatRoomOpenGetMessage(t *testing.T) {
 	for _, v := range testChatRooms {
 		ctx := make(map[string]string, 0)
 		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
@@ -104,19 +124,6 @@ func Test_006_ChatRoomOpenGetMessage(t *testing.T) {
 			t.Error(err)
 		} else {
 			t.Log("success")
-		}
-	}
-}
-
-func Test_007_ChatRoomStatus(t *testing.T) {
-	for _, v := range testChatRooms {
-		ctx := make(map[string]string, 0)
-		ctx["vcChatRoomSerialNo"] = v["vcChatRoomSerialNo"]
-		data, err := testClient.ChatRoomStatus(ctx)
-		if err != nil {
-			t.Error(err)
-		} else {
-			t.Log(data)
 		}
 	}
 }

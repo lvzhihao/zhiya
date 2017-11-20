@@ -9,14 +9,28 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/lvzhihao/goutils"
 )
 
 var (
-	UchatApiPrefix string = "http://skyagent.shequnguanjia.com/Merchant.asmx"
+	UchatApiPrefix    string = "http://skyagent.shequnguanjia.com/Merchant.asmx"
+	UchatTimeZone     string = "Asia/Shanghai"
+	UchatTimeLocation *time.Location
 )
+
+func init() {
+	UchatTimeLocation, _ = time.LoadLocation(UchatTimeZone) //default China
+	if os.Getenv("UCHAT_TIMEZONE") != "" {
+		loc, err := time.LoadLocation(os.Getenv("UCHAT_TIMEZONE"))
+		if err == nil {
+			UchatTimeZone = os.Getenv("UCHAT_TIMEZONE")
+			UchatTimeLocation = loc
+		}
+	}
+}
 
 // 小U机器客户端
 type UchatClient struct {

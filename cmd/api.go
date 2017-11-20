@@ -77,6 +77,7 @@ var apiCmd = &cobra.Command{
 		app.POST("/api/robotadduser", apis.RobotAddUser)
 		app.POST("/api/sendmessage", apis.SendMessage)
 		app.POST("/api/pyrobotloginqr", apis.PyRobotLoginQr)
+		app.POST("/api/chatroomkicking", apis.ChatRoomKicking)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},

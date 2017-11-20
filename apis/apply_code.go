@@ -189,6 +189,25 @@ func ChatRoomMemberJoinWelcome(ctx echo.Context) error {
 	})
 }
 
+func ChatRoomKicking(ctx echo.Context) error {
+	post := make(map[string]string, 0)
+	post["vcChatRoomSerialNo"] = ctx.FormValue("chat_room_serial_no")
+	post["vcXxUserSerialNo"] = ctx.FormValue("wx_user_serial_no")
+	post["vcComment"] = ctx.FormValue("comment")
+	err := uchatlib.ChatRoomKicking(post)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000009",
+			Error: err.Error(),
+		})
+	} else {
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: "success",
+		})
+	}
+}
+
 func RobotAddUser(ctx echo.Context) error {
 	robotSerialNo := ctx.FormValue("robot_serial_no")
 	userWeixinId := ctx.FormValue("user_weixin_id")
@@ -204,7 +223,6 @@ func RobotAddUser(ctx echo.Context) error {
 			Data: "success",
 		})
 	}
-
 }
 
 func SendMessage(ctx echo.Context) error {
