@@ -72,6 +72,7 @@ var apiCmd = &cobra.Command{
 		})
 		app.POST("/api/applycode", apis.ApplyCode)
 		app.POST("/api/syncrobots", apis.SyncRobots)
+		app.POST("/api/syncchats", apis.SyncChats)
 		app.POST("/api/overchatroom", apis.OverChatRoom)
 		app.POST("/api/welcome", apis.ChatRoomMemberJoinWelcome) //201706221050000271
 		app.POST("/api/robotadduser", apis.RobotAddUser)

@@ -163,6 +163,22 @@ func SyncRobots(ctx echo.Context) error {
 	}
 }
 
+func SyncChats(ctx echo.Context) error {
+	robotSerialNo := ctx.FormValue("robot_serial_no")
+	err := uchat.SyncRobotChatRooms(robotSerialNo, Client, DB)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000011",
+			Error: err.Error(),
+		})
+	} else {
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: "success",
+		})
+	}
+}
+
 func OverChatRoom(ctx echo.Context) error {
 	serialNo := ctx.FormValue("serial_no")
 	comment := ctx.FormValue("comment")
