@@ -104,6 +104,7 @@ var syncCmd = &cobra.Command{
 				sugar.Fatal(err)
 			}
 			defer rows.Close()
+			num := 0
 			for rows.Next() {
 				var no string
 				err := rows.Scan(&no)
@@ -117,7 +118,9 @@ var syncCmd = &cobra.Command{
 						sugar.Infof("success: %s", no)
 					}
 				}
+				num++
 			}
+			sugar.Infof("count: %d", num)
 		default:
 			sugar.Warn("only support robot/chat/member/chatstatus")
 		}
