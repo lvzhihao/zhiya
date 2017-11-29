@@ -99,12 +99,14 @@ func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	var robotRooms []models.RobotChatRoom
-	err = db.Where("robot_serial_no = ?", robotSerialNo).Where("is_open = ?", true).Find(&robotRooms).Error
-	if err != nil {
-		return err
-	}
-	rootSerialNos := make([]string, 0)
+	/*
+		var robotRooms []models.RobotChatRoom
+		err = db.Where("robot_serial_no = ?", robotSerialNo).Where("is_open = ?", true).Find(&robotRooms).Error
+		if err != nil {
+			return err
+		}
+		rootSerialNos := make([]string, 0)
+	*/
 	for _, v := range list {
 		if _, ok := v["vcChatRoomSerialNo"]; ok {
 			chatRoomSerialNo := goutils.ToString(v["vcChatRoomSerialNo"])
@@ -120,18 +122,20 @@ func SyncRobotChatRoomsCallback(b []byte, db *gorm.DB) error {
 				return err
 			}
 			// last status for this robot
-			rootSerialNos = append(rootSerialNos, robotRoom.ChatRoomSerialNo)
+			//rootSerialNos = append(rootSerialNos, robotRoom.ChatRoomSerialNo)
 		}
 	}
 	//set close history
-	for _, room := range robotRooms {
-		if goutils.InStringSlice(rootSerialNos, room.ChatRoomSerialNo) == false {
-			err := room.Close(db)
-			if err != nil {
-				return err
+	/*
+		for _, room := range robotRooms {
+			if goutils.InStringSlice(rootSerialNos, room.ChatRoomSerialNo) == false {
+				err := room.Close(db)
+				if err != nil {
+					return err
+				}
 			}
 		}
-	}
+	*/
 	return nil
 }
 
@@ -198,14 +202,12 @@ func SyncRobotChatRooms(RobotSerialNo string, client *uchatlib.UchatClient, db *
 		return err
 	}
 	// fetch exists with this robot
-	/*
-		var robotRooms []models.RobotChatRoom
-		err = db.Where("robot_serial_no = ?", RobotSerialNo).Where("is_open = ?", true).Find(&robotRooms).Error
-		if err != nil {
-			return err
-		}
-		rootSerialNos := make([]string, 0)
-	*/
+	var robotRooms []models.RobotChatRoom
+	err = db.Where("robot_serial_no = ?", RobotSerialNo).Where("is_open = ?", true).Find(&robotRooms).Error
+	if err != nil {
+		return err
+	}
+	rootSerialNos := make([]string, 0)
 	for _, v := range rst {
 		// ensure chatroom
 		room := models.ChatRoom{}
@@ -233,21 +235,19 @@ func SyncRobotChatRooms(RobotSerialNo string, client *uchatlib.UchatClient, db *
 			return err
 		}
 		// 同步群状态
-		//SyncChatRoomStatus(robotRoom.ChatRoomSerialNo, client, db)
+		SyncChatRoomStatus(robotRoom.ChatRoomSerialNo, client, db)
 		// last status for this robot
-		//rootSerialNos = append(rootSerialNos, robotRoom.ChatRoomSerialNo)
+		rootSerialNos = append(rootSerialNos, robotRoom.ChatRoomSerialNo)
 	}
 	//set close history
-	/*
-		for _, room := range robotRooms {
-			if goutils.InStringSlice(rootSerialNos, room.ChatRoomSerialNo) == false {
-				err := room.Close(db)
-				if err != nil {
-					return err
-				}
+	for _, room := range robotRooms {
+		if goutils.InStringSlice(rootSerialNos, room.ChatRoomSerialNo) == false {
+			err := room.Close(db)
+			if err != nil {
+				return err
 			}
 		}
-	*/
+	}
 	return nil
 }
 
