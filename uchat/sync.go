@@ -152,6 +152,11 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, d
 	if err != nil {
 		return err
 	}
+	robotChatRoom := &models.RobotChatRoom{}
+	err = robotChatRoom.Ensure(db, goutils.ToString(rst["vcRobotSerialNo"]), serialNo)
+	if err == nil {
+		robotChatRoom.Open(db)
+	}
 	room.Status = goutils.ToInt32(rst["nStatus"])
 	room.RobotInStatus = goutils.ToInt32(rst["nRobotInStatus"])
 	room.RobotSerialNo = goutils.ToString(rst["vcRobotSerialNo"])
