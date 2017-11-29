@@ -144,28 +144,46 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, d
 	ctx["vcChatRoomSerialNo"] = chatRoomSerialNo
 	rst, err := client.ChatRoomStatus(ctx)
 	if err != nil {
-		return err
-	}
-	serialNo := goutils.ToString(rst["vcSerialNo"])
-	var room models.ChatRoom
-	err = db.Where("chat_room_serial_no = ?", serialNo).First(&room).Error
-	if err != nil {
-		return err
-	}
-	var robotChatRoom models.RobotChatRoom
-	err = db.Where("robot_serial_no = ?", goutils.ToString(rst["vcRobotSerialNo"])).Where("chat_room_serial_no = ?", serialNo).First(&robotChatRoom).Error
-	if err == nil {
-		if goutils.ToInt32(rst["nStatus"]) == 10 {
-			robotChatRoom.Open(db)
+		if err.Error() == "群未开通" {
+			var room models.ChatRoom
+			err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&room).Error
+			if err != nil {
+				return err
+			}
+			var robotChatRoom models.RobotChatRoom
+			err = db.Where("robot_serial_no = ?", room.RobotSerialNo).Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&robotChatRoom).Error
+			if err == nil {
+				robotChatRoom.Close(db)
+			}
+			room.Status = 0
+			room.RobotInStatus = 1
+			room.RobotStatus = 0
+			return db.Save(&room).Error
 		} else {
-			robotChatRoom.Close(db)
+			return err
 		}
+	} else {
+		serialNo := goutils.ToString(rst["vcSerialNo"])
+		var room models.ChatRoom
+		err = db.Where("chat_room_serial_no = ?", serialNo).First(&room).Error
+		if err != nil {
+			return err
+		}
+		var robotChatRoom models.RobotChatRoom
+		err = db.Where("robot_serial_no = ?", goutils.ToString(rst["vcRobotSerialNo"])).Where("chat_room_serial_no = ?", serialNo).First(&robotChatRoom).Error
+		if err == nil {
+			if goutils.ToInt32(rst["nStatus"]) == 10 {
+				robotChatRoom.Open(db)
+			} else {
+				robotChatRoom.Close(db)
+			}
+		}
+		room.Status = goutils.ToInt32(rst["nStatus"])
+		room.RobotInStatus = goutils.ToInt32(rst["nRobotInStatus"])
+		room.RobotSerialNo = goutils.ToString(rst["vcRobotSerialNo"])
+		room.RobotStatus = goutils.ToInt32(rst["nRobotStatus"])
+		return db.Save(&room).Error
 	}
-	room.Status = goutils.ToInt32(rst["nStatus"])
-	room.RobotInStatus = goutils.ToInt32(rst["nRobotInStatus"])
-	room.RobotSerialNo = goutils.ToString(rst["vcRobotSerialNo"])
-	room.RobotStatus = goutils.ToInt32(rst["nRobotStatus"])
-	return db.Save(&room).Error
 }
 
 /*
