@@ -121,6 +121,19 @@ var syncCmd = &cobra.Command{
 				num++
 			}
 			sugar.Infof("count: %d", num)
+		case "openmessage":
+			chats, err := cmd.Flags().GetString("chats")
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			for _, chat := range strings.Split(chats, ",") {
+				err := uchatlib.SetChatRoomOpenGetMessage(chat, client)
+				if err != nil {
+					sugar.Fatal(err)
+				} else {
+					sugar.Infof("open GetMessage success: %s\n", chat)
+				}
+			}
 		default:
 			sugar.Warn("only support robot/chat/member/chatstatus")
 		}
