@@ -260,6 +260,22 @@ func SendMessage(ctx echo.Context) error {
 	})
 }
 
+func ApplyChatRoomQrCode(ctx echo.Context) error {
+	chatRoomSerialNo := ctx.FormValue("chat_room_serial_no")
+	err := uchatlib.ApplyChatRoomQrCode(chatRoomSerialNo, Client)
+	if err != nil {
+		return ctx.JSON(http.StatusOK, Result{
+			Code:  "000012",
+			Error: err.Error(),
+		})
+	} else {
+		return ctx.JSON(http.StatusOK, Result{
+			Code: "000000",
+			Data: "success",
+		})
+	}
+}
+
 type PyRobotLoginQrInput struct {
 	RobotName string `json:"robot_name"`
 	QrCode    string `json:"qr_code"`

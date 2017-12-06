@@ -89,6 +89,7 @@ var receiveQueueConfig = map[string]string{
 	"uchat.robot.deny":            "uchat.robot.deny",
 	"uchat.send.messages.error":   "uchat.send.messages.error",
 	"uchat.log":                   "uchat.#",
+	"uchat.chat.qrcode":           "uchat.chat.qrcode",
 }
 
 // migrateCmd represents the migrate command

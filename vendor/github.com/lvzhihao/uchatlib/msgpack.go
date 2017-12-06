@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/lvzhihao/goutils"
-	"github.com/vmihailenco/msgpack"
 )
 
 type UchatMessage struct {
@@ -64,25 +63,6 @@ func ConvertUchatMessage(b []byte) ([]*UchatMessage, error) {
 		msg.ShareDesc = goutils.ToString(v["vcShareDesc"])
 		msg.ShareUrl = goutils.ToString(v["vcShareUrl"])
 		ret = append(ret, msg)
-	}
-	return ret, nil
-}
-
-/*
- 转换Uchat Message数据为Msgpack格式
-*/
-func ConvertUchatMessageToMsgpack(b []byte) ([][]byte, error) {
-	msgs, err := ConvertUchatMessage(b)
-	if err != nil {
-		return nil, err
-	}
-	ret := make([][]byte, 0)
-	for _, msg := range msgs {
-		b, err := msgpack.Marshal(msg)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, b)
 	}
 	return ret, nil
 }
