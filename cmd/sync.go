@@ -149,7 +149,7 @@ var syncCmd = &cobra.Command{
 			}
 		case "checkqrcode":
 			var chatRooms []models.ChatRoom
-			err := db.Where("qr_code is null OR qr_code_expired_date < NOW()").Limit(10).Find(&chatRooms).Error
+			err := db.Where("robot_status = ?", 10).Where("robot_in_status = ?", 0).Where("(qr_code is null OR qr_code_expired_date < NOW())").Limit(10).Find(&chatRooms).Error
 			if err != nil {
 				sugar.Fatal(err)
 			}
