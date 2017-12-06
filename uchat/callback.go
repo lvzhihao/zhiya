@@ -35,6 +35,14 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	if !ok {
 		return errors.New("empty Data")
 	}
+	if chatRoomId, ok := rst["vcChatRoomId"]; ok {
+		var chatRoom models.ChatRoom
+		err = db.Where("chat_room_serial_no = ?", goutils.ToString(chatRoomSerialNo)).First(&chatRoom).Error
+		if err == nil {
+			chatRoom.ChatRoomId = goutils.ToString(chatRoomId)
+			db.Save(&chatRoom)
+		}
+	} // update chatroomId
 	var list ChatRoomMembersList
 	err = json.Unmarshal([]byte(strings.TrimRight(strings.TrimLeft(goutils.ToString(data), "["), "]")), &list)
 	if err != nil {
@@ -54,6 +62,7 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		if err != nil {
 			return err
 		}
+		member.WxId = goutils.ToString(v["vcWeixinId"])
 		//member.NickName = goutils.ToString(v["vcNickName"])
 		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
 		member.NickName = goutils.ToString(nickNameB)
@@ -61,9 +70,9 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		member.HeadImages = goutils.ToString(v["vcHeadImages"])
 		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
 		member.FatherWxUserSerialNo = goutils.ToString(v["vcFatherWxUserSerialNo"])
-		member.MsgCount = goutils.ToInt32(v["nMsgCount"])
+		//member.MsgCount = goutils.ToInt32(v["nMsgCount"])
+		//member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
 		member.IsActive = true
-		member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
 		member.JoinDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
 		err = db.Save(&member).Error
 		if err != nil {
@@ -82,4 +91,25 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		}
 	}
 	return nil
+}
+
+func SyncChatQrCodeCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	chatRoomSerialNo, ok := rst["vcChatRoomSerialNo"]
+	if !ok {
+		return errors.New("empty vcChatRoomSerialNo")
+	}
+	var chatRoom models.ChatRoom
+	err = db.Where("chat_room_serial_no = ?", goutils.ToString(chatRoomSerialNo)).First(&chatRoom).Error
+	if err != nil {
+		return err
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	chatRoom.QrCode = goutils.ToString(rst["vcChatRoomQRCode"])
+	chatRoom.QrCodeExpiredDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(rst["dtExpireDateTime"]), loc)
+	return db.Save(&chatRoom).Error
 }

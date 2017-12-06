@@ -10,6 +10,7 @@ import (
 type ChatRoomMember struct {
 	gorm.Model
 	ChatRoomSerialNo     string    `gorm:"size:100" json:"chat_room_serial_no"`                       //群编号
+	WxId                 string    `gorm:"size:100" json:"wx_id"`                                     //微信原生ID号
 	WxUserSerialNo       string    `gorm:"size:100" json:"wx_user_serial_no"`                         //会员编号
 	NickName             string    `gorm:"size:255" json:"nick_name"`                                 //昵称
 	Base64NickName       string    `gorm:"size:500" json:"base64_nick_name"`                          //昵称Base64

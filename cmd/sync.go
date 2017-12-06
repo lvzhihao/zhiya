@@ -134,6 +134,34 @@ var syncCmd = &cobra.Command{
 					sugar.Infof("open GetMessage success: %s\n", chat)
 				}
 			}
+		case "closemessage":
+			chats, err := cmd.Flags().GetString("chats")
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			for _, chat := range strings.Split(chats, ",") {
+				err := uchatlib.SetChatRoomCloseGetMessage(chat, client)
+				if err != nil {
+					sugar.Fatal(err)
+				} else {
+					sugar.Infof("close GetMessage success: %s\n", chat)
+				}
+			}
+		case "checkqrcode":
+			var chatRooms []models.ChatRoom
+			err := db.Where("qr_code is null OR qr_code_expired_date < NOW()").Limit(10).Find(&chatRooms).Error
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			//sugar.Info(chatRooms)
+			for _, room := range chatRooms {
+				err := uchatlib.ApplyChatRoomQrCode(room.ChatRoomSerialNo, client)
+				if err != nil {
+					sugar.Warn(err)
+				} else {
+					sugar.Infof("create new qrcode success: %s\n", room.ChatRoomSerialNo)
+				}
+			}
 		default:
 			sugar.Warn("only support robot/chat/member/chatstatus")
 		}

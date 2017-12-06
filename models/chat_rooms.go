@@ -18,14 +18,17 @@ type MySubChatRoomConfig struct {
 // 群记录
 type ChatRoom struct {
 	gorm.Model
-	ChatRoomSerialNo string `gorm:"size:100;unique_index" json:"chat_room_serial_no"` //群编号
-	WxUserSerialNo   string `gorm:"size:100" json:"wx_user_serial_no"`                //群主编号
-	Name             string `gorm:"size:255" json:"name"`                             //群名称
-	Base64Name       string `gorm:"size:500" json:"base64_name"`                      //群名称
-	Status           int32  `gorm:"index:idx_status" json:"status"`                   //群状态 10:开启 11:注销
-	RobotInStatus    int32  `json:"robot_in_status"`                                  //机器人是否在群内 0:在群内 1:不在群内
-	RobotSerialNo    string `gorm:"size:100" json:"robot_serial_no"`                  //设备号
-	RobotStatus      int32  `gorm:"index:idx_robot_status" json:"robot_status"`       //设备状态
+	ChatRoomSerialNo  string    `gorm:"size:100;unique_index" json:"chat_room_serial_no"` //群编号
+	WxUserSerialNo    string    `gorm:"size:100" json:"wx_user_serial_no"`                //群主编号
+	Name              string    `gorm:"size:255" json:"name"`                             //群名称
+	Base64Name        string    `gorm:"size:500" json:"base64_name"`                      //群名称
+	Status            int32     `gorm:"index:idx_status" json:"status"`                   //群状态 10:开启 11:注销
+	RobotInStatus     int32     `json:"robot_in_status"`                                  //机器人是否在群内 0:在群内 1:不在群内
+	RobotSerialNo     string    `gorm:"size:100" json:"robot_serial_no"`                  //设备号
+	RobotStatus       int32     `gorm:"index:idx_robot_status" json:"robot_status"`       //设备状态
+	QrCode            string    `gorm:"size:500" json:"qr_code"`                          //群二维码
+	QrCodeExpiredDate time.Time `json:"qr_code_expired_date"`                             //群二维码失效时间
+	ChatRoomId        string    `gorm:"size:100" json:"chat_room_id"`                     //微信原生ID
 }
 
 /*

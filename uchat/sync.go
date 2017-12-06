@@ -419,6 +419,7 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
 		if err != nil {
 			return err
 		}
+		member.WxId = goutils.ToString(v["vcWxId"])
 		//member.NickName = goutils.ToString(v["vcNickName"])
 		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
 		member.NickName = goutils.ToString(nickNameB)
