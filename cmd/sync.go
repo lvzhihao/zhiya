@@ -85,7 +85,7 @@ var syncCmd = &cobra.Command{
 			if chats, _ := cmd.Flags().GetString("chats"); chats != "" {
 				err = db.Where("chat_room_serial_no in (?)", strings.Split(chats, ",")).Find(&objs).Error
 			} else {
-				err = db.Find(&objs).Error
+				err = db.Where("robot_status = ?", 10).Where("robot_in_status = ?", 0).Find(&objs).Error
 			}
 			if err != nil {
 				sugar.Fatal(err)
