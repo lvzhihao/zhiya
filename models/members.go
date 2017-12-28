@@ -6,7 +6,9 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+//go:generate goqueryset -in members.go
 // 群成员
+// gen:qs
 type ChatRoomMember struct {
 	gorm.Model
 	ChatRoomSerialNo     string    `gorm:"size:100" json:"chat_room_serial_no"`                       //群编号

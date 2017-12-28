@@ -13,5 +13,9 @@ docker-push:
 	sudo docker push edwinlll/zhiya:latest
 
 docker-ccr:
-	sudo docker tag edwinlll/zhiya:latest ccr.ccs.tencentyun.com/wdwd/zhiya
-	sudo docker push ccr.ccs.tencentyun.com/wdwd/zhiya
+	sudo docker tag edwinlll/zhiya:latest ccr.ccs.tencentyun.com/wdwd/zhiya:latest
+	sudo docker push ccr.ccs.tencentyun.com/wdwd/zhiya:latest
+
+docker-uhub:
+	sudo docker tag edwinlll/zhiya:latest uhub.service.ucloud.cn/mmzs/zhiya:latest
+	sudo docker push uhub.service.ucloud.cn/mmzs/zhiya:latest

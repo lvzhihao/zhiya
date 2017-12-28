@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -24,6 +25,17 @@ type Robot struct {
 */
 func (c *Robot) Ensure(db *gorm.DB, serialNo string) error {
 	return db.Where(Robot{SerialNo: serialNo}).FirstOrInit(c).Error
+}
+
+// 设备好友
+type RobotFriend struct {
+	gorm.Model
+	RobotSerialNo  string    `gorm:"size:100" json:"robot_serial_no"`   //设备编号
+	WxUserSerialNo string    `gorm:"size:100" json:"wx_user_serial_no"` //会员编号
+	NickName       string    `gorm:"size:255" json:"nick_name"`         //设备昵称
+	Base64NickName string    `gorm:"size:500" json:"base64_nick_name"`  //设备昵称Base64
+	HeadImages     string    `gorm:"size:500" json:"head_images"`       //设备头像
+	AddDate        time.Time `json:"add_date"`                          //添加时间
 }
 
 /*

@@ -865,3 +865,35 @@ func SyncChatOverCallback(b []byte, client *uchatlib.UchatClient) error {
 	}
 	return uchatlib.SetChatRoomOver(goutils.ToString(rst["chat_room_serial_no"]), "pc user", client)
 }
+
+func SyncRobotFriendAddCallback(b []byte, db *gorm.DB) error {
+	var rst map[string]interface{}
+	err := json.Unmarshal(b, &rst)
+	if err != nil {
+		return err
+	}
+	_, ok := rst["Data"]
+	if !ok {
+		return errors.New("no Data")
+	}
+	var data []map[string]interface{}
+	err = json.Unmarshal([]byte(goutils.ToString(rst["Data"])), &data)
+	if err != nil {
+		return err
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	for _, v := range data {
+		rec := &models.RobotFriend{}
+		rec.RobotSerialNo = goutils.ToString(v["vcRobotSerialNo"])
+		rec.WxUserSerialNo = goutils.ToString(v["vcUserSerialNo"])
+		rec.NickName = goutils.ToString(v["vcNickName"])
+		rec.Base64NickName = goutils.ToString(v["vcBase64NickName"])
+		rec.HeadImages = goutils.ToString(v["vcHeadImgUrl"])
+		rec.AddDate, _ = time.ParseInLocation("2006-01-02 15:04:05", goutils.ToString(v["dtAddDate"]), loc)
+		err := db.Save(rec).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

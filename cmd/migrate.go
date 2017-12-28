@@ -72,6 +72,7 @@ var InitDBModel = []interface{}{
 	&models.ChatRoomMember{},      //微信群用户
 	&models.MySubChatRoomConfig{}, //代理商限制配置
 	&models.TulingConfig{},        //图灵机器人配置
+	&models.RobotFriend{},         //设备好友信息
 }
 
 var receiveQueueConfig = map[string]string{
@@ -90,6 +91,7 @@ var receiveQueueConfig = map[string]string{
 	"uchat.send.messages.error":   "uchat.send.messages.error",
 	"uchat.log":                   "uchat.#",
 	"uchat.chat.qrcode":           "uchat.chat.qrcode",
+	"uchat.robot.friend.add":      "uchat.robot.friend.add",
 }
 
 // migrateCmd represents the migrate command

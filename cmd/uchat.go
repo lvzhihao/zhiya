@@ -81,6 +81,8 @@ var uchatCmd = &cobra.Command{
 			consumer.Consumer("uchat.web.unbindrooms", 20, shell.ChatOver)
 		case "uchat.chat.qrcode":
 			consumer.Consumer("uchat.chat.qrcode", 20, shell.ChatQrCode)
+		case "uchat.robot.friend.add":
+			consumer.Consumer("uchat.robot.friend.add", 20, shell.RobotFriendAdd)
 		default:
 			sugar.Fatal("Please input current queue name")
 		}
@@ -243,6 +245,17 @@ func (c *consumerShell) ChatQrCode(msg amqp.Delivery) {
 		msg.Ack(false)
 	} else {
 		Logger.Info("process success", zap.String("queue", "uchat.chat.qrcode"), zap.Any("msg", msg))
+		msg.Ack(false)
+	}
+}
+
+func (c *consumerShell) RobotFriendAdd(msg amqp.Delivery) {
+	err := uchat.SyncRobotFriendAddCallback(msg.Body, c.db)
+	if err != nil {
+		Logger.Error("process error", zap.String("queue", "uchat.robot.friend.add"), zap.Error(err), zap.Any("msg", msg))
+		msg.Ack(false)
+	} else {
+		Logger.Info("process success", zap.String("queue", "uchat.robot.friend.add"), zap.Any("msg", msg))
 		msg.Ack(false)
 	}
 }
