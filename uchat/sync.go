@@ -843,7 +843,7 @@ func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, d
 	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
 		key := strings.Replace(content, cmd.CmdValue, "", 1)
 		if key != "" {
-			url := "http://" + domain + ".m.52jdyouhui.cn/s/" + url.QueryEscape(key)
+			url := "http://" + domain + ".m.52jdyouhui.cn/s/" + url.QueryEscape(strings.TrimSpace(key))
 			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
 			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
 			message := &models.MessageQueue{}
