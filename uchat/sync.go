@@ -727,6 +727,7 @@ func FetchAlimamaSearchPid(myId, subId string, db *gorm.DB) (string, error) {
   获取淘宝联盟产品搜索信息
 */
 func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *gorm.DB) error {
+	return nil
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
@@ -782,6 +783,7 @@ func SendAlimamProductSearch(myId, pid, chatRoomSerialNo, content string, db *go
   获取淘宝联盟优惠信息
 */
 func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gorm.DB) error {
+	return nil
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
