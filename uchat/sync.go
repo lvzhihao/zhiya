@@ -647,15 +647,18 @@ func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 			err := SendShopCustomSearch(robotChatRoom.MyId, robotChatRoom.SubId, robotChatRoom.ChatRoomSerialNo, content, db)
 			//如果没有自定义配置
 			if err != nil {
-				pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+				//pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+				domain, err := FetchTuikeasySearchDomain(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
-				err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+				//err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+				err = SendTuikeasyProductSearch(robotChatRoom.MyId, domain, robotChatRoom.ChatRoomSerialNo, content, db)
 				//如果已经匹配关键字则不用再去搜索优惠链接
 				if err != nil {
-					err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+					//err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+					err = SendTuikeasyCouponSearch(robotChatRoom.MyId, domain, robotChatRoom.ChatRoomSerialNo, content, db)
 					log.Println(err)
 				}
 			}
@@ -699,6 +702,28 @@ func SendShopCustomSearch(myId, subId, chatRoomSerialNo, content string, db *gor
 		}
 	}
 	return errors.New("no shop.custom.search config")
+}
+
+/*
+  获取淘宝联盟广告位pid
+*/
+func FetchTuikeasySearchDomain(myId, subId string, db *gorm.DB) (string, error) {
+	if subId != "" {
+		pid := ""
+		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "tuikeasy").Where("supplier_id = ?", myId).Where("shop_id = ?", subId).Select("pid").Row()
+		row.Scan(&pid)
+		if pid != "" {
+			return "mmzl" + subId, nil
+		}
+	} else {
+		pid := ""
+		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "tuikeasy").Where("supplier_id = ?", myId).Where("is_self = ?", true).Select("pid").Row()
+		row.Scan(&pid)
+		if pid != "" {
+			return "mmzl-" + utils.FakeIdEncode(goutils.ToInt64(myId)), nil
+		}
+	}
+	return "", errors.New("no pid")
 }
 
 /*
@@ -810,6 +835,63 @@ func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gor
 	}
 	//todo log
 	return errors.New("no alimama.coupon.search config")
+}
+
+func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
+	var cmd models.MyCmd
+	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
+	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
+		key := strings.Replace(content, cmd.CmdValue, "", 1)
+		if key != "" {
+			url := "http://" + domain + ".m.52jdyouhui.cn/s/" + url.QueryEscape(key)
+			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
+			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
+			message := &models.MessageQueue{}
+			message.ChatRoomSerialNoList = chatRoomSerialNo
+			message.ChatRoomCount = 1
+			message.MsgType = "2001"
+			message.IsHit = true
+			message.WeixinSerialNo = ""
+			message.MsgContent = pubContent
+			message.SendType = 1
+			message.SendStatus = 0
+			err := db.Create(message).Error
+			if err != nil {
+				return err
+			}
+			message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+			return db.Save(message).Error
+		}
+	}
+	//todo log
+	return errors.New("no tuikeasy.product.search config")
+}
+
+func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
+	return nil
+	var cmd models.MyCmd
+	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
+	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
+		url := "http://" + domain + ".m.52jdyouhui.cn"
+		pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
+		message := &models.MessageQueue{}
+		message.ChatRoomSerialNoList = chatRoomSerialNo
+		message.ChatRoomCount = 1
+		message.MsgType = "2001"
+		message.IsHit = true
+		message.WeixinSerialNo = ""
+		message.MsgContent = pubContent
+		message.SendType = 1
+		message.SendStatus = 0
+		err := db.Create(message).Error
+		if err != nil {
+			return err
+		}
+		message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+		return db.Save(message).Error
+	}
+	//todo log
+	return errors.New("no tuikeasy.coupon.search config")
 }
 
 /*
