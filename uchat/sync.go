@@ -720,7 +720,7 @@ func FetchTuikeasySearchDomain(myId, subId string, db *gorm.DB) (string, error) 
 		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "tuikeasy").Where("supplier_id = ?", myId).Where("is_self = ?", true).Select("pid").Row()
 		row.Scan(&pid)
 		if pid != "" {
-			return "mmzl-" + utils.FakeIdEncode(goutils.ToInt64(myId)), nil
+			return "mmzlb" + utils.FakeIdEncode(goutils.ToInt64(myId)), nil
 		}
 	}
 	return "", errors.New("no pid")
@@ -843,7 +843,7 @@ func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, d
 	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
 		key := strings.Replace(content, cmd.CmdValue, "", 1)
 		if key != "" {
-			url := "http://m.52jdyouhui.cn/" + domain + "/s/" + url.QueryEscape(strings.TrimSpace(key))
+			url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
 			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
 			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
 			message := &models.MessageQueue{}
@@ -872,7 +872,7 @@ func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
-		url := "http://m.52jdyouhui.cn/" + domain + "/"
+		url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/"
 		pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
 		message := &models.MessageQueue{}
 		message.ChatRoomSerialNoList = chatRoomSerialNo
