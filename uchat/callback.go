@@ -108,8 +108,9 @@ func SyncChatQrCodeCallback(b []byte, db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	//log.Fatal(chatRoom, "\n", rst)
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	chatRoom.QrCode = goutils.ToString(rst["vcChatRoomQRCode"])
-	chatRoom.QrCodeExpiredDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(rst["dtExpireDateTime"]), loc)
+	chatRoom.QrCodeExpiredDate, _ = time.ParseInLocation("2006-01-02 15:04:05", goutils.ToString(rst["dtExpireDateTime"]), loc)
 	return db.Save(&chatRoom).Error
 }
