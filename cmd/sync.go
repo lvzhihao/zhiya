@@ -151,7 +151,7 @@ var syncCmd = &cobra.Command{
 			var chatRooms []models.ChatRoom
 			var err error
 			if robots, _ := cmd.Flags().GetString("robots"); robots != "" {
-				err = db.Where("robot_serial_no in (?)", strings.Split(robots, ",")).Where("robot_status = ?", 10).Where("robot_in_status = ?", 0).Find(&chatRooms).Error
+				err = db.Where("robot_serial_no in (?)", strings.Split(robots, ",")).Where("robot_status = ?", 10).Where("robot_in_status = ?", 0).Where("(qr_code is null OR qr_code_expired_date < NOW())").Find(&chatRooms).Error
 			} else {
 				err = db.Where("robot_status = ?", 10).Where("robot_in_status = ?", 0).Where("(qr_code is null OR qr_code_expired_date < NOW())").Limit(10).Find(&chatRooms).Error
 			}
