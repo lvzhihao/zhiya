@@ -66,7 +66,7 @@ func FetchApplyCode(db *gorm.DB, myId, subId, robotSerialNo, limit string) (*mod
 	}
 	// todo check subid chatroom limit
 
-	limitNum := 10
+	limitNum := 30
 	if limit != "" {
 		limitNum = int(goutils.ToInt(limit))
 	}
