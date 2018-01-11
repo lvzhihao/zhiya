@@ -459,6 +459,7 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db 
 			msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
 		}
 		if msg == "" {
+			tx.Rollback()
 			return errors.New("no content")
 		}
 		message.ChatRoomSerialNoList = charRoomSerialNo
