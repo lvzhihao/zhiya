@@ -22,8 +22,9 @@ import (
 )
 
 var (
-	DefaultMemberJoinWelcome string = ""
-	HashID                   *hashids.HashID
+	DefaultMemberJoinWelcome      string        = ""
+	DefaultMemberJoinSendInterval time.Duration = 60 * time.Second
+	HashID                        *hashids.HashID
 )
 
 //初始化hashids
@@ -443,32 +444,53 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
   发送群内信息
 */
 func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db *gorm.DB) error {
-	if msg == "" {
-		msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
-	}
-	if msg == "" {
-		return errors.New("no content")
-	}
+	log.Println("commit start")
 	message := &models.MessageQueue{}
-	message.ChatRoomSerialNoList = charRoomSerialNo
-	message.ChatRoomCount = 1
-	message.MsgType = "2001"
-	message.IsHit = true
-	if strings.Contains(msg, "@新成员名称") {
-		message.MsgContent = strings.Replace(msg, "@新成员名称", "", -1) //有问题这里
-		message.WeixinSerialNo = wxSerialNo
+	tx := db.Begin()
+	err := tx.Where("chat_room_serial_no_list = ?", charRoomSerialNo).Where("send_type = 10").Where("send_status = 0").First(&message).Error
+	if err == nil {
+		log.Println("update join message")
+		//update
+		message.WeixinSerialNo = message.WeixinSerialNo + "," + wxSerialNo //添加@新成员
 	} else {
-		message.WeixinSerialNo = ""
-		message.MsgContent = msg
+		log.Println("create join message")
+		//new message
+		if msg == "" {
+			msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
+		}
+		if msg == "" {
+			return errors.New("no content")
+		}
+		message.ChatRoomSerialNoList = charRoomSerialNo
+		message.ChatRoomCount = 1
+		message.MsgType = "2001"
+		message.IsHit = true
+		if strings.Contains(msg, "@新成员名称") {
+			message.MsgContent = strings.Replace(msg, "@新成员名称", "", -1) //有问题这里
+			message.WeixinSerialNo = wxSerialNo
+		} else {
+			message.WeixinSerialNo = ""
+			message.MsgContent = msg
+		}
+		message.SendType = 10 //第一个新成员加入后，30秒内所有加入成员一起发送，类型10
+		message.SendStatus = 0
+		message.SendTime = time.Now().Add(DefaultMemberJoinSendInterval)
+		err := tx.Create(message).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
 	}
-	message.SendType = 1
-	message.SendStatus = 0
-	err := db.Create(message).Error
+	log.Println(message)
+	err = tx.Save(message).Error
 	if err != nil {
+		tx.Rollback()
 		return err
 	}
-	message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
-	return db.Save(message).Error
+	err = tx.Commit().Error
+	log.Println("commit status:", err)
+	return err
 }
 
 /*

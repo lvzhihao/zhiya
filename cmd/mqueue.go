@@ -94,7 +94,7 @@ BreakFor:
 			continue
 		}
 		var msg2 []models.MessageQueue
-		err = db.Where("send_type = 2").Where("send_status = 0").Where("send_time <= ?", time.Now()).Order("id asc").Limit(100).Find(&msg2).Error
+		err = db.Where("send_type IN (2, 10)").Where("send_status = 0").Where("send_time <= ?", time.Now()).Order("id asc").Limit(100).Find(&msg2).Error
 		if err != nil {
 			Logger.Error("Load Message Error 2", zap.Error(err))
 		}
