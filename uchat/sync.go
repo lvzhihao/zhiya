@@ -618,6 +618,24 @@ func FetchTulingResult(key, secret string, context map[string]interface{}, chat_
 				}, nil
 			}
 		}
+		regex = regexp.MustCompile(`^亲，已找到在(.*)的(.*)价格行情$`)
+		strs = regex.FindStringSubmatch(data.Text)
+		if len(strs) == 3 {
+			keyword := strs[2]
+			content, err := GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, keyword, db, managerDB)
+			if err == nil {
+				return []map[string]string{
+					map[string]string{
+						"nMsgType":   "2001",
+						"msgContent": content,
+						"vcTitle":    "",
+						"vcDesc":     "",
+						"nVoiceTime": "0",
+						"vcHref":     "",
+					},
+				}, nil
+			}
+		}
 		return []map[string]string{
 			map[string]string{
 				"nMsgType":   "2001",
