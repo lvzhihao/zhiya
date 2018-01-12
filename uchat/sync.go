@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -550,7 +551,7 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 				data, err := FetchTulingResult(tulingConfig.ApiKey, tulingConfig.ApiSecret, map[string]interface{}{
 					"info":   goutils.ToString(v["vcContent"]),
 					"userid": goutils.ToString(v["vcFromWxUserSerialNo"]),
-				})
+				}, robotChatRoom.ChatRoomSerialNo, db, managerDB)
 				if err != nil {
 					log.Println(err)
 				} else {
@@ -571,7 +572,7 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 	return nil
 }
 
-func FetchTulingResult(key, secret string, context map[string]interface{}) ([]map[string]string, error) {
+func FetchTulingResult(key, secret string, context map[string]interface{}, chat_room_serial_no string, db, managerDB *gorm.DB) ([]map[string]string, error) {
 	c := tuling.NewTulingClient(tuling.TulingClientConfig{
 		ApiUrl:         viper.GetString("tuling_api_url"),
 		ApiKey:         key,
@@ -599,6 +600,25 @@ func FetchTulingResult(key, secret string, context map[string]interface{}) ([]ma
 			},
 		}, nil
 	case 200000:
+		var regex = regexp.MustCompile(`^亲，已帮你找到(.*)价格信息$`)
+		strs := regex.FindStringSubmatch(data.Text)
+		if len(strs) == 2 {
+			keyword := strs[1]
+			content, err := GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, keyword, db, managerDB)
+			log.Fatal(content, err)
+			if err == nil {
+				return []map[string]string{
+					map[string]string{
+						"nMsgType":   "2001",
+						"msgContent": content,
+						"vcTitle":    "",
+						"vcDesc":     "",
+						"nVoiceTime": "0",
+						"vcHref":     "",
+					},
+				}, nil
+			}
+		}
 		return []map[string]string{
 			map[string]string{
 				"nMsgType":   "2001",
@@ -860,34 +880,66 @@ func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gor
 	return errors.New("no alimama.coupon.search config")
 }
 
-func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
+func GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, key string, db *gorm.DB, managerDB *gorm.DB) (string, error) {
+	var robotChatRoom models.RobotChatRoom
+	db.Where("chat_room_serial_no = ?", chat_room_serial_no).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+	if robotChatRoom.MyId != "" { //有绑定供应商
+		//pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		domain, err := FetchTuikeasySearchDomain(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		if err != nil {
+			return "", errors.New("no domain")
+		}
+		var cmd models.MyCmd
+		db.Where("my_id = ?", robotChatRoom.MyId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
+		if key != "" {
+			url := GenerateTuikeasyProductSearchUrl(domain, key)
+			content := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
+			content = strings.Replace(content, "{优惠链接}", ShortUrl(url), -1)
+			return content, nil
+		}
+	}
+	return "", errors.New("no tuikeasy.product.search config")
+}
+
+func GenerateTuikeasyProductSearchUrl(domain, key string) string {
+	return "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
+}
+
+func GenerateTuikeasyProductSearchContent(myId, domain, content string, db *gorm.DB) (string, error) {
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
 		key := strings.Replace(content, cmd.CmdValue, "", 1)
 		if key != "" {
-			url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
-			pubContent := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
-			pubContent = strings.Replace(pubContent, "{优惠链接}", ShortUrl(url), -1)
-			message := &models.MessageQueue{}
-			message.ChatRoomSerialNoList = chatRoomSerialNo
-			message.ChatRoomCount = 1
-			message.MsgType = "2001"
-			message.IsHit = true
-			message.WeixinSerialNo = ""
-			message.MsgContent = pubContent
-			message.SendType = 1
-			message.SendStatus = 0
-			err := db.Create(message).Error
-			if err != nil {
-				return err
-			}
-			message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
-			return db.Save(message).Error
+			url := GenerateTuikeasyProductSearchUrl(domain, key)
+			content := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
+			content = strings.Replace(content, "{优惠链接}", ShortUrl(url), -1)
+			return content, nil
 		}
 	}
-	//todo log
-	return errors.New("no tuikeasy.product.search config")
+	return "", errors.New("no tuikeasy.product.search config")
+}
+
+func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
+	content, err := GenerateTuikeasyProductSearchContent(myId, domain, content, db)
+	if err != nil {
+		return err
+	}
+	message := &models.MessageQueue{}
+	message.ChatRoomSerialNoList = chatRoomSerialNo
+	message.ChatRoomCount = 1
+	message.MsgType = "2001"
+	message.IsHit = true
+	message.WeixinSerialNo = ""
+	message.MsgContent = content
+	message.SendType = 1
+	message.SendStatus = 0
+	err = db.Create(message).Error
+	if err != nil {
+		return err
+	}
+	message.QueueId, _ = HashID.Encode([]int{int(message.ID)})
+	return db.Save(message).Error
 }
 
 func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
