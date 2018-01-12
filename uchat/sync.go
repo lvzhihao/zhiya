@@ -605,7 +605,6 @@ func FetchTulingResult(key, secret string, context map[string]interface{}, chat_
 		if len(strs) == 2 {
 			keyword := strs[1]
 			content, err := GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, keyword, db, managerDB)
-			log.Fatal(content, err)
 			if err == nil {
 				return []map[string]string{
 					map[string]string{
