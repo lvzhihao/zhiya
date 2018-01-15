@@ -922,7 +922,7 @@ func GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, key stri
 
 func GenerateTuikeasyProductSearchUrl(domain, key string) string {
 	//return "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
-	return "http://m.clickbuy.cc/list?pid=" + strings.TrimSpace(domain) + "&keyword=" + url.QueryEscape(strings.TrimSpace(key))
+	return "http://m.clickbuy.cc/list?pid=" + strings.TrimSpace(domain) + "&kwd=" + url.QueryEscape(strings.TrimSpace(key))
 }
 
 func GenerateTuikeasyProductSearchContent(myId, domain, content string, db *gorm.DB) (string, error) {
