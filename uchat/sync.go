@@ -773,14 +773,16 @@ func FetchTuikeasySearchDomain(myId, subId string, db *gorm.DB) (string, error) 
 		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "tuikeasy").Where("supplier_id = ?", myId).Where("shop_id = ?", subId).Select("pid").Row()
 		row.Scan(&pid)
 		if pid != "" {
-			return "mmzl" + subId, nil
+			//return "mmzl" + subId, nil
+			return pid, nil
 		}
 	} else {
 		pid := ""
 		row := db.Table("sdb_maifou_promotion_detail").Where("platform = ?", "tuikeasy").Where("supplier_id = ?", myId).Where("is_self = ?", true).Select("pid").Row()
 		row.Scan(&pid)
 		if pid != "" {
-			return "mmzlb" + utils.FakeIdEncode(goutils.ToInt64(myId)), nil
+			//return "mmzlb" + utils.FakeIdEncode(goutils.ToInt64(myId)), nil
+			return pid, nil
 		}
 	}
 	return "", errors.New("no pid")
@@ -919,7 +921,8 @@ func GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, key stri
 }
 
 func GenerateTuikeasyProductSearchUrl(domain, key string) string {
-	return "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
+	//return "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
+	return "http://m.clickbuy.cc/list?pid=" + strings.TrimSpace(domain) + "&keyword=" + url.QueryEscape(strings.TrimSpace(key))
 }
 
 func GenerateTuikeasyProductSearchContent(myId, domain, content string, db *gorm.DB) (string, error) {
