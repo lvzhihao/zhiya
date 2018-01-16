@@ -7,7 +7,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -23,7 +23,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -35,7 +35,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -47,7 +47,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -59,7 +59,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -71,7 +71,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -83,7 +83,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -95,7 +95,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -107,7 +107,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -119,7 +119,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -131,7 +131,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -143,7 +143,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
@@ -155,7 +155,7 @@ services:
       - TZ=Asia/Shanghai
       - DEBUG=true
     volumes:
-      - ./.zhiya.yaml:/go/src/github.com/lvzhihao/zhiya/.zhiya.yaml
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
