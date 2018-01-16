@@ -399,7 +399,7 @@ func SyncMemberQuitCallback(b []byte, db *gorm.DB) error {
   同步群成员入群通知回调
   支持重复调用
 */
-func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
+func SyncMemberJoinCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -436,7 +436,7 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
 			return err
 		}
 		// send Message
-		SendChatRoomMemberTextMessage(member.ChatRoomSerialNo, member.WxUserSerialNo, "", db)
+		SendChatRoomMemberTextMessage(member.ChatRoomSerialNo, member.WxUserSerialNo, "", db, managerDB)
 	}
 	return nil
 }
@@ -444,7 +444,7 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB) error {
 /*
   发送群内信息
 */
-func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db *gorm.DB) error {
+func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db, managerDB *gorm.DB) error {
 	log.Println("commit start")
 	message := &models.MessageQueue{}
 	tx := db.Begin()
@@ -473,6 +473,12 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db 
 		} else {
 			message.WeixinSerialNo = ""
 			message.MsgContent = msg
+		}
+		if strings.Contains(msg, "{优惠链接}") {
+			url, err := GenerateTuikeasyProductCouponSearchByChatRoomSerialNo(charRoomSerialNo, db, managerDB)
+			if err == nil {
+				message.MsgContent = strings.Replace(message.MsgContent, "{优惠链接}", url, -1) //有问题这里
+			}
 		}
 		message.SendType = 10 //第一个新成员加入后，30秒内所有加入成员一起发送，类型10
 		message.SendStatus = 0
@@ -897,6 +903,21 @@ func SendAlimamCouponSearch(myId, pid, chatRoomSerialNo, content string, db *gor
 	}
 	//todo log
 	return errors.New("no alimama.coupon.search config")
+}
+
+func GenerateTuikeasyProductCouponSearchByChatRoomSerialNo(chat_room_serial_no string, db *gorm.DB, managerDB *gorm.DB) (string, error) {
+	var robotChatRoom models.RobotChatRoom
+	db.Where("chat_room_serial_no = ?", chat_room_serial_no).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+	if robotChatRoom.MyId != "" { //有绑定供应商
+		//pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		domain, err := FetchTuikeasySearchDomain(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		if err != nil {
+			return "", errors.New("no pid")
+		}
+		return "http://m.clickbuy.cc/index?pid=" + strings.TrimSpace(domain), nil
+	}
+	return "", errors.New("no tuikeasy.product.search config")
+
 }
 
 func GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, key string, db *gorm.DB, managerDB *gorm.DB) (string, error) {

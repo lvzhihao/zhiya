@@ -176,7 +176,7 @@ func (c *consumerShell) MemberQuit(msg amqp.Delivery) {
 }
 
 func (c *consumerShell) MemberJoin(msg amqp.Delivery) {
-	err := uchat.SyncMemberJoinCallback(msg.Body, c.db)
+	err := uchat.SyncMemberJoinCallback(msg.Body, c.db, c.managerDB)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.member.join"), zap.Error(err), zap.Any("msg", msg))
 		msg.Ack(false)
