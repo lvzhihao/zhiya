@@ -11,7 +11,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run api"
+      zhiya api"
     expose:
       - 8079
     ports:
@@ -27,7 +27,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run mqueue"
+      zhiya mqueue"
   zhiya-queue-uchat.chat.create:
     image: edwinlll/zhiya:latest
     restart: always
@@ -39,7 +39,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.chat.create"
+      zhiya uchat --queue uchat.chat.create"
   zhiya-queue-uchat.chat.keyword:
     image: edwinlll/zhiya:latest
     restart: always
@@ -51,7 +51,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.chat.keyword"
+      zhiya uchat --queue uchat.chat.keyword"
   zhiya-queue-uchat.chat.message:
     image: edwinlll/zhiya:latest
     restart: always
@@ -63,7 +63,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.chat.message"
+      zhiya uchat --queue uchat.chat.message"
   zhiya-queue-uchat.member.join:
     image: edwinlll/zhiya:latest
     restart: always
@@ -75,7 +75,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.member.join"
+      zhiya uchat --queue uchat.member.join"
   zhiya-queue-uchat.member.list:
     image: edwinlll/zhiya:latest
     restart: always
@@ -87,7 +87,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.member.list"
+      zhiya uchat --queue uchat.member.list"
   zhiya-queue-uchat.member.message_sum:
     image: edwinlll/zhiya:latest
     restart: always
@@ -99,7 +99,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.member.message_sum"
+      zhiya uchat --queue uchat.member.message_sum"
   zhiya-queue-uchat.member.quit:
     image: edwinlll/zhiya:latest
     restart: always
@@ -111,7 +111,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.member.quit"
+      zhiya uchat --queue uchat.member.quit"
   zhiya-queue-uchat.mysql.message.queue:
     image: edwinlll/zhiya:latest
     restart: always
@@ -123,7 +123,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.mysql.message.queue" 
+      zhiya uchat --queue uchat.mysql.message.queue" 
   zhiya-queue-uchat.robot.chat.list:
     image: edwinlll/zhiya:latest
     restart: always
@@ -135,7 +135,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.robot.chat.list" 
+      zhiya uchat --queue uchat.robot.chat.list" 
   zhiya-queue-uchat.chat.qrcode:
     image: edwinlll/zhiya:latest
     restart: always
@@ -147,7 +147,7 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.chat.qrcode" 
+      zhiya uchat --queue uchat.chat.qrcode" 
   zhiya-queue-uchat.robot.friend.add:
     image: edwinlll/zhiya:latest
     restart: always
@@ -159,4 +159,4 @@ services:
     command: >
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
-      go-wrapper run uchat --queue uchat.robot.friend.add" 
+      zhiya uchat --queue uchat.robot.friend.add" 

@@ -1,8 +1,10 @@
-FROM golang:1.9
-
+FROM golang:1.9 as builder
 WORKDIR /go/src/github.com/lvzhihao/zhiya
+COPY . . 
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo .
 
-COPY . .  
-
-RUN go-wrapper install \
-    && rm -rf *
+FROM alpine:latest  
+RUN apk --no-cache add ca-certificates
+WORKDIR /usr/local/zhiya
+COPY --from=builder /go/src/github.com/lvzhihao/zhiya/zhiya .
+ENV PATH /usr/local/zhiya:$PATH
