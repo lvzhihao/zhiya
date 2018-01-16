@@ -477,7 +477,7 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db,
 		if strings.Contains(msg, "{优惠链接}") {
 			url, err := GenerateTuikeasyProductCouponSearchByChatRoomSerialNo(charRoomSerialNo, db, managerDB)
 			if err == nil {
-				message.MsgContent = strings.Replace(message.MsgContent, "{优惠链接}", url, -1) //有问题这里
+				message.MsgContent = strings.Replace(message.MsgContent, "{优惠链接}", ShortUrl(url), -1) //有问题这里
 			}
 		}
 		message.SendType = 10 //第一个新成员加入后，30秒内所有加入成员一起发送，类型10
