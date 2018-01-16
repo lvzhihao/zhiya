@@ -967,7 +967,8 @@ func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
-		url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/"
+		//url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/"
+		url := "http://m.clickbuy.cc/index?pid=" + strings.TrimSpace(domain)
 		pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
 		message := &models.MessageQueue{}
 		message.ChatRoomSerialNoList = chatRoomSerialNo
