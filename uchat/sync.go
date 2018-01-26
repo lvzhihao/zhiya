@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -916,7 +917,7 @@ func GenerateTuikeasyProductCouponSearchByChatRoomSerialNo(chat_room_serial_no s
 		if err != nil {
 			return "", errors.New("no pid")
 		}
-		return "http://m.clickbuy.cc/index?pid=" + strings.TrimSpace(domain), nil
+		return "https://haschen.2mai2.com/index?pid=" + strings.TrimSpace(domain), nil
 	}
 	return "", errors.New("no tuikeasy.product.search config")
 
@@ -943,9 +944,29 @@ func GenerateTuikeasyProductSearchContentByKeyword(chat_room_serial_no, key stri
 	return "", errors.New("no tuikeasy.product.search config")
 }
 
+func GenerateTuikeasyProductSearchTextUrlByKeyword(chat_room_serial_no, key string, db *gorm.DB, managerDB *gorm.DB) (string, string, error) {
+	var robotChatRoom models.RobotChatRoom
+	db.Where("chat_room_serial_no = ?", chat_room_serial_no).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
+	if robotChatRoom.MyId != "" { //有绑定供应商
+		//pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		domain, err := FetchTuikeasySearchDomain(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+		if err != nil {
+			return "", "", errors.New("no domain")
+		}
+		var cmd models.MyCmd
+		db.Where("my_id = ?", robotChatRoom.MyId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
+		if key != "" {
+			url := GenerateTuikeasyProductSearchUrl(domain, key)
+			content := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
+			return content, url, nil
+		}
+	}
+	return "", "", errors.New("no tuikeasy.product.search config")
+}
+
 func GenerateTuikeasyProductSearchUrl(domain, key string) string {
 	//return "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/s/" + url.QueryEscape(strings.TrimSpace(key))
-	return "http://m.clickbuy.cc/list?pid=" + strings.TrimSpace(domain) + "&kwd=" + url.QueryEscape(strings.TrimSpace(key))
+	return "https://haschen.2mai2.com/list?pid=" + strings.TrimSpace(domain) + "&kwd=" + url.QueryEscape(strings.TrimSpace(key))
 }
 
 func GenerateTuikeasyProductSearchContent(myId, domain, content string, db *gorm.DB) (string, error) {
@@ -963,20 +984,41 @@ func GenerateTuikeasyProductSearchContent(myId, domain, content string, db *gorm
 	return "", errors.New("no tuikeasy.product.search config")
 }
 
+func GenerateTuikeasyProductSearchTextUrl(myId, domain, content string, db *gorm.DB) (string, string, error) {
+	var cmd models.MyCmd
+	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
+	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
+		key := strings.Replace(content, cmd.CmdValue, "", 1)
+		if key != "" {
+			url := GenerateTuikeasyProductSearchUrl(domain, key)
+			content := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
+			return content, url, nil
+		}
+	}
+	return "", "", errors.New("no tuikeasy.product.search config")
+}
+
 func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
-	content, err := GenerateTuikeasyProductSearchContent(myId, domain, content, db)
+	text, url, err := GenerateTuikeasyProductSearchTextUrl(myId, domain, content, db)
 	if err != nil {
 		return err
 	}
-	message := &models.MessageQueue{}
-	message.ChatRoomSerialNoList = chatRoomSerialNo
-	message.ChatRoomCount = 1
-	message.MsgType = "2001"
-	message.IsHit = true
-	message.WeixinSerialNo = ""
-	message.MsgContent = content
-	message.SendType = 1
-	message.SendStatus = 0
+	message := FixWechatMiniGroupMessageQueue(chatRoomSerialNo, strings.Replace(text, "{优惠链接}", "", -1), url, "http://zhiya-img.wdwdcdn.com/M_M5a6b0adc703a8.png")
+	/*
+		content, err := GenerateTuikeasyProductSearchContent(myId, domain, content, db)
+		if err != nil {
+			return err
+		}
+		message := &models.MessageQueue{}
+		message.ChatRoomSerialNoList = chatRoomSerialNo
+		message.ChatRoomCount = 1
+		message.MsgType = "2001"
+		message.IsHit = true
+		message.WeixinSerialNo = ""
+		message.MsgContent = content
+		message.SendType = 1
+		message.SendStatus = 0
+	*/
 	err = db.Create(message).Error
 	if err != nil {
 		return err
@@ -985,22 +1027,58 @@ func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, d
 	return db.Save(message).Error
 }
 
+func FixWechatMiniGroupContext(text, webviewUrl string) string {
+	v := url.Values{}
+	v.Set("url", webviewUrl)
+	var mc []string
+	mc = append(mc, "gh_af8953599a25@app")
+	mc = append(mc, fmt.Sprintf("pages/event/webview.html?%s", v.Encode()))
+	mc = append(mc, "wx8684cf95eb723443")
+	mc = append(mc, "https://mp.weixin.qq.com/mp/waerrpageappid=wx8684cf95eb723443&type=upgrade&upgradetype=3#wechat_redirect")
+	mc = append(mc, "http://mmbiz.qpic.cn/mmbiz_png/4YhLOcwTG8FTiaB6M5icrkwibciboO3QbdDcSHXichicZuor1KwyHZSU6ELKRxu9Np80CboX9sJ0yO3A8n308wrjd4pg/0?wx_fmt=png")
+	mc = append(mc, text)
+	mc = append(mc, text)
+	mc = append(mc, "福利领取")
+	for k, vv := range mc {
+		mc[k] = base64.StdEncoding.EncodeToString([]byte(vv))
+	}
+	return strings.Join(mc, ";")
+}
+
+func FixWechatMiniGroupMessageQueue(chatRoomSerialNo, text, webviewUrl, img string) *models.MessageQueue {
+	message := &models.MessageQueue{}
+	message.ChatRoomSerialNoList = chatRoomSerialNo
+	message.ChatRoomCount = 1
+	message.MsgType = "2014"
+	message.IsHit = true
+	message.WeixinSerialNo = ""
+	message.MsgContent = FixWechatMiniGroupContext(text, webviewUrl)
+	message.Title = "福利领取"
+	message.Href = img
+	message.SendType = 1
+	message.SendStatus = 0
+	return message
+}
+
 func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
 		//url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/"
-		url := "http://m.clickbuy.cc/index?pid=" + strings.TrimSpace(domain)
-		pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
-		message := &models.MessageQueue{}
-		message.ChatRoomSerialNoList = chatRoomSerialNo
-		message.ChatRoomCount = 1
-		message.MsgType = "2001"
-		message.IsHit = true
-		message.WeixinSerialNo = ""
-		message.MsgContent = pubContent
-		message.SendType = 1
-		message.SendStatus = 0
+		url := "https://haschen.2mai2.com/index?pid=" + strings.TrimSpace(domain)
+		message := FixWechatMiniGroupMessageQueue(chatRoomSerialNo, strings.Replace(cmd.CmdReply, "{优惠链接}", "", -1), url, "http://zhiya-img.wdwdcdn.com/M_M5a6b0aab91245.png")
+		/*
+			pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
+			message := &models.MessageQueue{}
+			message.ChatRoomSerialNoList = chatRoomSerialNo
+			message.ChatRoomCount = 1
+			message.MsgType = "2001"
+			message.IsHit = true
+			message.WeixinSerialNo = ""
+			message.MsgContent = pubContent
+			message.SendType = 1
+			message.SendStatus = 0
+		*/
 		err := db.Create(message).Error
 		if err != nil {
 			return err
