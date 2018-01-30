@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
@@ -17,6 +15,7 @@ import (
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/shorten"
 	"github.com/lvzhihao/zhiya/tuling"
 	"github.com/lvzhihao/zhiya/utils"
 	hashids "github.com/speps/go-hashids"
@@ -984,7 +983,7 @@ func GenerateTuikeasyProductSearchContent(myId, domain, content string, db *gorm
 	return "", errors.New("no tuikeasy.product.search config")
 }
 
-func GenerateTuikeasyProductSearchTextUrl(myId, domain, content string, db *gorm.DB) (string, string, error) {
+func GenerateTuikeasyProductSearchTextUrl(myId, domain, content string, db *gorm.DB) (*models.MyCmd, string, string, error) {
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.product.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Index(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
@@ -992,33 +991,30 @@ func GenerateTuikeasyProductSearchTextUrl(myId, domain, content string, db *gorm
 		if key != "" {
 			url := GenerateTuikeasyProductSearchUrl(domain, key)
 			content := strings.Replace(cmd.CmdReply, "{搜索关键词}", strings.TrimSpace(key), -1)
-			return content, url, nil
+			return &cmd, content, url, nil
 		}
 	}
-	return "", "", errors.New("no tuikeasy.product.search config")
+	return nil, "", "", errors.New("no tuikeasy.product.search config")
 }
 
 func SendTuikeasyProductSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
-	text, url, err := GenerateTuikeasyProductSearchTextUrl(myId, domain, content, db)
+	cmd, text, link, err := GenerateTuikeasyProductSearchTextUrl(myId, domain, content, db)
 	if err != nil {
 		return err
 	}
-	message := FixWechatMiniGroupMessageQueue(chatRoomSerialNo, strings.Replace(text, "{优惠链接}", "", -1), url, "http://zhiya-img.wdwdcdn.com/M_M5a6b0adc703a8.png")
-	/*
-		content, err := GenerateTuikeasyProductSearchContent(myId, domain, content, db)
-		if err != nil {
-			return err
-		}
-		message := &models.MessageQueue{}
+	message := &models.MessageQueue{}
+	if CheckCmdUseWechatMini(cmd) == true {
+		message = FixWechatMiniGroupMessageQueue(chatRoomSerialNo, strings.Replace(text, "{优惠链接}", "", -1), link, "http://zhiya-img.wdwdcdn.com/M_M5a6b0adc703a8.png")
+	} else {
 		message.ChatRoomSerialNoList = chatRoomSerialNo
 		message.ChatRoomCount = 1
 		message.MsgType = "2001"
 		message.IsHit = true
 		message.WeixinSerialNo = ""
-		message.MsgContent = content
+		message.MsgContent = strings.Replace(text, "{优惠链接}", ShortUrl(link), -1)
 		message.SendType = 1
 		message.SendStatus = 0
-	*/
+	}
 	err = db.Create(message).Error
 	if err != nil {
 		return err
@@ -1060,16 +1056,36 @@ func FixWechatMiniGroupMessageQueue(chatRoomSerialNo, text, webviewUrl, img stri
 	return message
 }
 
+func CheckCmdUseWechatMini(m *models.MyCmd) bool {
+	var params map[string]interface{}
+	err := json.Unmarshal([]byte(goutils.ToString(m.CmdParams)), &params)
+	if err != nil {
+		log.Println("CheckCmdUseWechatMini Error:", err)
+		return false
+	}
+	if v, ok := params["use_mini"]; !ok {
+		return false
+	} else {
+		switch v.(type) {
+		case bool:
+			return v.(bool)
+		default:
+			return false
+		}
+	}
+}
+
 func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db *gorm.DB) error {
 	var cmd models.MyCmd
 	db.Where("my_id = ?", myId).Where("cmd_type = ?", "alimama.coupon.search").Where("is_open = 1").First(&cmd)
 	if cmd.ID > 0 && strings.Compare(strings.TrimSpace(content), strings.TrimSpace(cmd.CmdValue)) == 0 {
 		//url := "http://m.52jdyouhui.cn/" + url.QueryEscape(domain) + "/"
-		url := "https://haschen.2mai2.com/index?pid=" + strings.TrimSpace(domain)
-		message := FixWechatMiniGroupMessageQueue(chatRoomSerialNo, strings.Replace(cmd.CmdReply, "{优惠链接}", "", -1), url, "http://zhiya-img.wdwdcdn.com/M_M5a6b0aab91245.png")
-		/*
-			pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(url), -1)
-			message := &models.MessageQueue{}
+		link := "https://haschen.2mai2.com/index?pid=" + strings.TrimSpace(domain)
+		message := &models.MessageQueue{}
+		if CheckCmdUseWechatMini(&cmd) == true {
+			message = FixWechatMiniGroupMessageQueue(chatRoomSerialNo, strings.Replace(cmd.CmdReply, "{优惠链接}", "", -1), link, "http://zhiya-img.wdwdcdn.com/M_M5a6b0aab91245.png")
+		} else {
+			pubContent := strings.Replace(cmd.CmdReply, "{优惠链接}", ShortUrl(link), -1)
 			message.ChatRoomSerialNoList = chatRoomSerialNo
 			message.ChatRoomCount = 1
 			message.MsgType = "2001"
@@ -1078,7 +1094,7 @@ func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db
 			message.MsgContent = pubContent
 			message.SendType = 1
 			message.SendStatus = 0
-		*/
+		}
 		err := db.Create(message).Error
 		if err != nil {
 			return err
@@ -1090,47 +1106,58 @@ func SendTuikeasyCouponSearch(myId, domain, chatRoomSerialNo, content string, db
 	return errors.New("no tuikeasy.coupon.search config")
 }
 
+var Shorten *shorten.T
+
+func init() {
+	Shorten = shorten.NewT(&shorten.TConfig{
+		Source: "1998084992",
+	})
+}
+
 /*
   生成新浪短链接
 */
 func ShortUrl(link string) string {
-	p := url.Values{}
-	p.Set("source", "1998084992")
-	p.Set("url_long", link)
-	req, err := http.NewRequest("GET", "https://api.weibo.com/2/short_url/shorten.json?"+p.Encode(), nil)
-	if err != nil {
-		return link
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return link
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return link
-	}
-	var rst map[string]interface{}
-	err = json.Unmarshal(b, &rst)
-	if err != nil {
-		return link
-	}
-	if _, ok := rst["urls"]; !ok {
-		return link
-	}
-	var links []map[string]interface{}
-	err = json.Unmarshal([]byte(goutils.ToString(rst["urls"])), &links)
-	if err != nil {
-		return link
-	}
-	if len(links) == 0 {
-		return link
-	}
-	if _, ok := links[0]["url_short"]; !ok {
-		return link
-	}
-	return goutils.ToString(links[0]["url_short"])
+	return Shorten.Short(link)
+	/*
+		p := url.Values{}
+		p.Set("source", "1998084992")
+		p.Set("url_long", link)
+		req, err := http.NewRequest("GET", "https://api.weibo.com/2/short_url/shorten.json?"+p.Encode(), nil)
+		if err != nil {
+			return link
+		}
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return link
+		}
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return link
+		}
+		var rst map[string]interface{}
+		err = json.Unmarshal(b, &rst)
+		if err != nil {
+			return link
+		}
+		if _, ok := rst["urls"]; !ok {
+			return link
+		}
+		var links []map[string]interface{}
+		err = json.Unmarshal([]byte(goutils.ToString(rst["urls"])), &links)
+		if err != nil {
+			return link
+		}
+		if len(links) == 0 {
+			return link
+		}
+		if _, ok := links[0]["url_short"]; !ok {
+			return link
+		}
+		return goutils.ToString(links[0]["url_short"])
+	*/
 }
 
 func SyncChatOverCallback(b []byte, client *uchatlib.UchatClient) error {
