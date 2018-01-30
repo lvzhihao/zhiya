@@ -50,13 +50,13 @@ func (t *T) Init() {
 }
 
 func (t *T) testStatus() {
-	short := t.Short(TTestURL)
-	if short == TTestURL {
+	short := t.shorts([]string{TTestURL})
+	if short[0] == TTestURL {
 		t.lk.Lock()
 		defer t.lk.Unlock()
 		t.shortEnable = false
 	} else {
-		rsp, err := t.testClient.Get(short)
+		rsp, err := t.testClient.Get(short[0])
 		t.lk.Lock()
 		defer t.lk.Unlock()
 		if err != nil || rsp.StatusCode != 200 {
@@ -80,6 +80,10 @@ func (t *T) Shorts(links []string) []string {
 		return links
 	}
 	t.lk.Unlock()
+	return t.shorts(links)
+}
+
+func (t *T) shorts(links []string) []string {
 	p := url.Values{}
 	for _, link := range links {
 		p.Add("url_long", link)
