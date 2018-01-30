@@ -391,6 +391,7 @@ func SyncMemberQuitCallback(b []byte, db *gorm.DB) error {
 		if err != nil {
 			return err
 		}
+		models.ApplyChatRoomMemberCount(db, goutils.ToString(v["vcChatRoomSerialNo"]))
 	}
 	return nil
 }
@@ -437,6 +438,8 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 		}
 		// send Message
 		SendChatRoomMemberTextMessage(member.ChatRoomSerialNo, member.WxUserSerialNo, "", db, managerDB)
+		// member count
+		models.ApplyChatRoomMemberCount(db, goutils.ToString(v["vcChatRoomSerialNo"]))
 	}
 	return nil
 }

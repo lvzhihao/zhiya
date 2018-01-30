@@ -86,15 +86,11 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	var chatRoom models.ChatRoom
 	err = db.Where("chat_room_serial_no = ?", goutils.ToString(chatRoomSerialNo)).First(&chatRoom).Error
 	if err == nil && chatRoom.ID > 0 {
-		var count int32
-		err = db.Model(&models.ChatRoomMember{}).Where("chat_room_serial_no = ?", chatRoom.ChatRoomSerialNo).Where("is_active = ?", true).Count(&count).Error
-		if err == nil {
-			chatRoom.MemberCount = count
-		} // update memberCount
 		if chatRoomId, ok := rst["vcChatRoomId"]; ok {
 			chatRoom.ChatRoomId = goutils.ToString(chatRoomId)
+			db.Save(&chatRoom)
 		} // update chatroomId
-		db.Save(&chatRoom)
+		chatRoom.ApplyMemberCount(db) // update memberCount
 	}
 	return nil
 }

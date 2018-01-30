@@ -40,6 +40,28 @@ func (c *ChatRoom) Ensure(db *gorm.DB, chatRoomSerialNo string) error {
 	return db.Where(ChatRoom{ChatRoomSerialNo: chatRoomSerialNo}).FirstOrInit(c).Error
 }
 
+/*
+  群有效人数
+*/
+func (c *ChatRoom) ApplyMemberCount(db *gorm.DB) int32 {
+	var count int32
+	err := db.Model(&ChatRoomMember{}).Where("chat_room_serial_no = ?", c.ChatRoomSerialNo).Where("is_active = ?", true).Count(&count).Error
+	if err == nil {
+		c.MemberCount = count
+		db.Save(c)
+	}
+	return count
+}
+
+func ApplyChatRoomMemberCount(db *gorm.DB, chatRoomSerialNo string) (int32, error) {
+	var chatRoom ChatRoom
+	err := db.Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&chatRoom).Error
+	if err != nil {
+		return 0, err
+	}
+	return chatRoom.ApplyMemberCount(db), nil
+}
+
 // 设备开群记录
 type RobotChatRoom struct {
 	gorm.Model
