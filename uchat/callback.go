@@ -35,14 +35,6 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	if !ok {
 		return errors.New("empty Data")
 	}
-	if chatRoomId, ok := rst["vcChatRoomId"]; ok {
-		var chatRoom models.ChatRoom
-		err = db.Where("chat_room_serial_no = ?", goutils.ToString(chatRoomSerialNo)).First(&chatRoom).Error
-		if err == nil {
-			chatRoom.ChatRoomId = goutils.ToString(chatRoomId)
-			db.Save(&chatRoom)
-		}
-	} // update chatroomId
 	var list ChatRoomMembersList
 	err = json.Unmarshal([]byte(strings.TrimRight(strings.TrimLeft(goutils.ToString(data), "["), "]")), &list)
 	if err != nil {
@@ -89,6 +81,20 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 				return err
 			}
 		}
+	}
+	// chatroom update
+	var chatRoom models.ChatRoom
+	err = db.Where("chat_room_serial_no = ?", goutils.ToString(chatRoomSerialNo)).First(&chatRoom).Error
+	if err == nil && chatRoom.ID > 0 {
+		var count int32
+		err = db.Model(&models.ChatRoomMember{}).Where("chat_room_serial_no = ?", chatRoom.ChatRoomSerialNo).Where("is_active = ?", true).Count(&count).Error
+		if err == nil {
+			chatRoom.MemberCount = count
+		} // update memberCount
+		if chatRoomId, ok := rst["vcChatRoomId"]; ok {
+			chatRoom.ChatRoomId = goutils.ToString(chatRoomId)
+		} // update chatroomId
+		db.Save(&chatRoom)
 	}
 	return nil
 }
