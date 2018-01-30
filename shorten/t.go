@@ -53,17 +53,18 @@ func (t *T) testStatus() {
 	short := t.shorts([]string{TTestURL})
 	if short[0] == TTestURL {
 		t.lk.Lock()
-		defer t.lk.Unlock()
 		t.shortEnable = false
+		t.lk.Unlock()
 	} else {
 		rsp, err := t.testClient.Get(short[0])
+		//log.Println(short[0], rsp, err)
 		t.lk.Lock()
-		defer t.lk.Unlock()
-		if err != nil || rsp.StatusCode != 200 {
-			t.shortEnable = false
-		} else {
+		if err == nil && rsp.StatusCode == 200 {
 			t.shortEnable = true
+		} else {
+			t.shortEnable = false
 		}
+		t.lk.Unlock()
 	}
 	time.AfterFunc(TTestInterval, t.testStatus)
 }
