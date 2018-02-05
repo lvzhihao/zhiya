@@ -73,25 +73,28 @@ var InitDBModel = []interface{}{
 	&models.MySubChatRoomConfig{}, //代理商限制配置
 	&models.TulingConfig{},        //图灵机器人配置
 	&models.RobotFriend{},         //设备好友信息
+	&models.MyRobotRenew{},        //设备续费日志
+	&models.WorkTemplate{},        //指令模板
+	&models.WorkTemplateCmd{},     //指令详情
 }
 
 var receiveQueueConfig = map[string]string{
-	"uchat.member.list":           "uchat.member.list",
-	"uchat.member.join":           "uchat.member.join",
-	"uchat.member.quit":           "uchat.member.quit",
-	"uchat.member.message_sum":    "uchat.member.message.sum",
-	"uchat.chat.create":           "uchat.chat.create",
-	"uchat.chat.message":          "uchat.chat.message",
-	"uchat.chat.keyword":          "uchat.chat.keyword",
-	"uchat.chat.redpack":          "uchat.chat.redpack",
-	"uchat.robot.chat.list":       "uchat.robot.chat.list",
-	"uchat.robot.chat.join":       "uchat.robot.chat.join",
-	"uchat.robot.message.private": "uchat.robot.message.private",
-	"uchat.robot.deny":            "uchat.robot.deny",
-	"uchat.send.messages.error":   "uchat.send.messages.error",
-	"uchat.log":                   "uchat.#",
-	"uchat.chat.qrcode":           "uchat.chat.qrcode",
-	"uchat.robot.friend.add":      "uchat.robot.friend.add",
+	"uchat.member.list":         "uchat.member.list",
+	"uchat.member.join":         "uchat.member.join",
+	"uchat.member.quit":         "uchat.member.quit",
+	"uchat.member.message_sum":  "uchat.member.message.sum",
+	"uchat.chat.create":         "uchat.chat.create",
+	"uchat.chat.message":        "uchat.chat.message",
+	"uchat.chat.keyword":        "uchat.chat.keyword",
+	"uchat.chat.redpack":        "uchat.chat.redpack",
+	"uchat.robot.chat.list":     "uchat.robot.chat.list",
+	"uchat.robot.chat.join":     "uchat.robot.chat.join",
+	"uchat.robot.deny":          "uchat.robot.deny",
+	"uchat.send.messages.error": "uchat.send.messages.error",
+	"uchat.log":                 "uchat.#",
+	"uchat.chat.qrcode":         "uchat.chat.qrcode",
+	"uchat.robot.friend.add":    "uchat.robot.friend.add",
+	//"uchat.robot.message.private": "uchat.robot.message.private",
 }
 
 // migrateCmd represents the migrate command

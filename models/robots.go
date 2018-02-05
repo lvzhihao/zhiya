@@ -43,9 +43,23 @@ type RobotFriend struct {
 */
 type MyRobot struct {
 	gorm.Model
-	RobotSerialNo string `gorm:"size:100;unique_index" json:"robot_serial_no"` //Uchat设备号，一个设备号只能绑定一个第三方用户
-	MyId          string `gorm:"size:100;index:idx_my_id" json:"my_id"`        //第三方绑定用户标识
-	SubId         string `gorm:"size:100;index:idx_sub_id" json:"sub_id"`      //子商户标识，如果存在
+	RobotSerialNo string    `gorm:"size:100;unique_index" json:"robot_serial_no"` //Uchat设备号，一个设备号只能绑定一个第三方用户
+	MyId          string    `gorm:"size:100;index:idx_my_id" json:"my_id"`        //第三方绑定用户标识
+	SubId         string    `gorm:"size:100;index:idx_sub_id" json:"sub_id"`      //子商户标识，如果存在
+	ExpireTime    time.Time `json:"expire_time"`                                  //拥有设备过期时间
+}
+
+/*
+  供应设备开通日志
+*/
+type MyRobotRenew struct {
+	gorm.Model
+	Platform      string `gorm:"size:50;not null;unique_index:uix_platform_payment_id" json:"platform"`    //支付平台，比如社群后台，并非真实支付端
+	PaymentId     string `gorm:"size:100;not null;unique_index:uix_platform_payment_id" json:"payment_id"` //支持单ID，支付平台&支付单ID唯一
+	RenewDays     int32  `json:"renew_days"`                                                               //续费天数
+	RobotSerialNo string `gorm:"size:100" json:"robot_serial_no"`                                          //如果指定设备号，则先检测此设备是否为MyId或subId所有，如果不是则不能续费，如果为空则新开设备
+	MyId          string `gorm:"size:100" json:"my_id"`                                                    //第三方绑定用户标识
+	SubId         string `gorm:"size:100" json:"sub_id"`                                                   //子商户标识，如果存在
 }
 
 /*
