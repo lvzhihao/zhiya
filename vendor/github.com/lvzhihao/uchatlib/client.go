@@ -60,9 +60,9 @@ type UchatClient struct {
 
 // 小U机器接口返回格式
 type UchatClientResult struct {
-	Result string        `json:"nResult"`  //1为成功, -1为失败
-	Error  string        `json:"vcResult"` //文字描述
-	Data   []interface{} `json:"Data"`     //返回结果
+	Result interface{} `json:"nResult"`  //1为成功, -1为失败
+	Error  string      `json:"vcResult"` //文字描述
+	Data   interface{} `json:"Data"`     //返回结果
 }
 
 //  初始化一个新的实例
@@ -147,14 +147,19 @@ func (c *UchatClient) Scan(resp *http.Response, err error) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rst.Result != "1" {
+	if goutils.ToString(rst.Result) != "1" {
 		if rst.Error != "" {
 			return nil, errors.New(rst.Error)
 		} else {
 			return nil, errors.New("未知错误")
 		}
 	}
-	return json.Marshal(rst.Data[0])
+	switch rst.Data.(type) {
+	case []interface{}:
+		return json.Marshal(rst.Data.([]interface{})[0])
+	default:
+		return json.Marshal(rst.Data)
+	}
 }
 
 // 发送请求

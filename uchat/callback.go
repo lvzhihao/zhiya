@@ -9,6 +9,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
 )
 
@@ -115,4 +116,32 @@ func SyncChatQrCodeCallback(b []byte, db *gorm.DB) error {
 	chatRoom.QrCode = goutils.ToString(rst["vcChatRoomQRCode"])
 	chatRoom.QrCodeExpiredDate, _ = time.ParseInLocation("2006-01-02 15:04:05", goutils.ToString(rst["dtExpireDateTime"]), loc)
 	return db.Save(&chatRoom).Error
+}
+
+func SyncRobotChatJoinCallback(b []byte, db *gorm.DB) error {
+	list, err := uchatlib.ConverUchatRobotChatJoin(b)
+	if err != nil {
+		return err
+	}
+	tx := db.Begin()
+	for _, v := range list {
+		var robotChatJoin models.RobotJoin
+		robotChatJoin.LogSerialNo = v.LogSerialNo
+		robotChatJoin.RobotSerialNo = v.RobotSerialNo
+		robotChatJoin.ChatRoomSerialNo = v.ChatRoomSerialNo
+		robotChatJoin.ChatRoomNickName = v.ChatRoomNickName
+		robotChatJoin.ChatRoomBase64NickName = v.ChatRoomBase64NickName
+		robotChatJoin.WxUserSerialNo = v.WxUserSerialNo
+		robotChatJoin.WxUserNickName = v.WxUserNickName
+		robotChatJoin.WxUserBase64NickName = v.WxUserBase64NickName
+		robotChatJoin.WxUserHeadImgUrl = v.WxUserHeadImgUrl
+		robotChatJoin.JoinDate = v.JoinDate
+		robotChatJoin.Status = 0
+		err := tx.Create(&robotChatJoin).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit().Error
 }

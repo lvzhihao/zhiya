@@ -76,6 +76,7 @@ var InitDBModel = []interface{}{
 	&models.MyRobotRenew{},        //设备续费日志
 	&models.WorkTemplate{},        //指令模板
 	&models.WorkTemplateCmd{},     //指令详情
+	&models.RobotJoin{},           //机器人入群信息
 }
 
 var receiveQueueConfig = map[string]string{

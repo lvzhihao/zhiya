@@ -65,7 +65,7 @@
   branch = "master"
   name = "github.com/lvzhihao/uchatlib"
   packages = ["."]
-  revision = "981b1ee7bc8d3b56363099a5658d6104e496312b"
+  revision = "0813f429cbf194545c9a3c8476814825f8b9a0c4"
 
 [[projects]]
   name = "github.com/magiconair/properties"
