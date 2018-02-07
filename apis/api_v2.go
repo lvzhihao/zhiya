@@ -1,12 +1,14 @@
 package apis
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/zhiya/models"
 )
 
 var (
@@ -36,37 +38,50 @@ func ReturnError(ctx echo.Context, code string, err error) error {
 	return ctx.JSON(http.StatusOK, ret)
 }
 
+func ReturnData(ctx echo.Context, data interface{}) error {
+	var ret ReturnType
+	ret.Code = "000000"
+	ret.Data = data
+	return ctx.JSON(http.StatusOK, ret)
+}
+
 func SendMessageV2(ctx echo.Context) error {
 	return SendMessage(ctx)
 }
 
 func GetRobotJoinListv2(ctx echo.Context) error {
 	params := ctx.QueryParams()
-	log.Fatal(params)
 	my_id := params.Get("my_id")
 	if my_id == "" {
 		return ReturnError(ctx, "100001", nil)
 	}
 	page_size := pageParam(params.Get("page_size"), 10)
 	page_num := pageParam(params.Get("page_num"), 1)
-	orderby := orderParam(params.Get("orderby"), []string{"join_data", "chat_room_serial_no", "robot_serial_no"}, []string{"join_data DESC"})
-	search := searchParam(params.Get("search"), []string{"chat_room_nick_name", "robot_nick_name"}, []string{})
-	return nil
+	db := DB.Where("my_id = ?", my_id).Offset((page_num - 1) * page_size).Limit(page_size)
+	db = ParseOrder(db, params.Get("orderby"), []string{"join_date", "chat_room_serial_no", "robot_serial_no"}, []string{"join_date DESC"})
+	db = ParseSearch(db, params.Get("search"), []string{"chat_room_nick_name", "robot_nick_name"})
+	var ret []models.RobotJoin
+	err := db.Find(&ret).Error
+	if err != nil {
+		return ReturnError(ctx, "100002", err)
+	}
+	return ReturnData(ctx, ret)
 }
 
-func pageParam(input interface{}, def int32) (num int32) {
-	num = goutils.ToInt32(input)
+func pageParam(input interface{}, def int) (num int) {
+	num = int(goutils.ToInt32(input))
 	if num == 0 {
 		num = def
 	}
 	return
 }
 
-func orderParam(input interface{}, allow []string, def []string) (ret []string) {
+func ParseOrder(db *gorm.DB, input interface{}, allow []string, def []string) *gorm.DB {
+	var ret []string
 	list := strings.Split(goutils.ToString(input), ";")
 	for _, v := range list {
 		data := strings.Split(v, ":")
-		if goutils.InStringSlice(allow, data[1]) {
+		if len(data) == 2 && goutils.InStringSlice(allow, data[1]) {
 			switch strings.ToLower(data[2]) {
 			case "asc":
 				ret = append(ret, data[1]+" "+"ASC")
@@ -78,9 +93,19 @@ func orderParam(input interface{}, allow []string, def []string) (ret []string) 
 	if len(ret) == 0 {
 		ret = def
 	}
-	return
+	for _, o := range ret {
+		db = db.Order(o)
+	}
+	return db
 }
 
-func searchParam(input interface{}, allow []string, def []string) (ret map[string]string) {
-	return
+func ParseSearch(db *gorm.DB, input interface{}, allow []string) *gorm.DB {
+	list := strings.Split(goutils.ToString(input), ";")
+	for _, v := range list {
+		data := strings.Split(v, ":")
+		if len(data) == 2 && goutils.InStringSlice(allow, data[1]) {
+			db = db.Where(fmt.Sprintf("%s LIKE ?", data[1]), fmt.Sprintf("%%%s%%", data[2]))
+		}
+	}
+	return db
 }

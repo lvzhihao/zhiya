@@ -126,6 +126,13 @@ func SyncRobotChatJoinCallback(b []byte, db *gorm.DB) error {
 	tx := db.Begin()
 	for _, v := range list {
 		var robotChatJoin models.RobotJoin
+		var myRobot models.MyRobot
+		err := db.Where("robot_serial_no = ?", v.RobotSerialNo).Where("expire_time > ?", time.Now().Unix()).First(&myRobot).Error
+		if err != nil {
+			robotChatJoin.MyId = ""
+		} else {
+			robotChatJoin.MyId = goutils.ToString(myRobot.MyId)
+		}
 		robotChatJoin.LogSerialNo = v.LogSerialNo
 		robotChatJoin.RobotSerialNo = v.RobotSerialNo
 		robotChatJoin.ChatRoomSerialNo = v.ChatRoomSerialNo
@@ -137,7 +144,7 @@ func SyncRobotChatJoinCallback(b []byte, db *gorm.DB) error {
 		robotChatJoin.WxUserHeadImgUrl = v.WxUserHeadImgUrl
 		robotChatJoin.JoinDate = v.JoinDate
 		robotChatJoin.Status = 0
-		err := tx.Create(&robotChatJoin).Error
+		err = tx.Create(&robotChatJoin).Error
 		if err != nil {
 			tx.Rollback()
 			return err

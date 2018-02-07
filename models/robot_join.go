@@ -8,6 +8,7 @@ import (
 
 type RobotJoin struct {
 	gorm.Model
+	MyId                   string    `gorm:"type:varchar(100);index;not null" json:"my_id"`               //设备拥有者
 	LogSerialNo            string    `gorm:"type:varchar(30);unique_index;not null" json:"log_serial_no"` //入群日志ID
 	RobotSerialNo          string    `gorm:"type:varchar(100);index;not null" json:"robot_serial_no"`     //设备号
 	ChatRoomSerialNo       string    `gorm:"type:varchar(100);index;not null" json:"chat_room_serial_no"` //群编号
