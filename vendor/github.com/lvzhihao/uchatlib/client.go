@@ -197,15 +197,16 @@ func (c *UchatClient) ScanGlobalResultList(key string, data []byte, err error) (
 	if err != nil {
 		return nil, err
 	}
+	var ret []map[string]string
 	if _, ok := rst[key]; !ok {
-		return nil, errors.New(key + " not found")
+		//return nil, errors.New(key + " not found")
+		return ret, nil //无返回值
 	}
 	var b []byte
 	b, err = json.Marshal(rst[key])
 	if err != nil {
 		return nil, err
 	}
-	var ret []map[string]string
 	err = json.Unmarshal(b, &ret)
 	return ret, err
 }

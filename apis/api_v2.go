@@ -2,6 +2,7 @@ package apis
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -15,6 +16,7 @@ var (
 	CODEMAP map[string]string = map[string]string{
 		"000000": "",
 		"100001": "my_id is empty",
+		"100003": "log_serial_no invaild",
 	}
 )
 
@@ -49,7 +51,7 @@ func SendMessageV2(ctx echo.Context) error {
 	return SendMessage(ctx)
 }
 
-func GetRobotJoinListv2(ctx echo.Context) error {
+func GetRobotJoinList(ctx echo.Context) error {
 	params := ctx.QueryParams()
 	my_id := params.Get("my_id")
 	if my_id == "" {
@@ -57,8 +59,11 @@ func GetRobotJoinListv2(ctx echo.Context) error {
 	}
 	var count int
 	page_size := pageParam(params.Get("page_size"), 10)
+	if page_size > 100 {
+		page_size = 100
+	}
 	page_num := pageParam(params.Get("page_num"), 1)
-	db := DB.Where("my_id = ?", my_id)
+	db := DB.Model(&models.RobotJoin{}).Where("my_id = ?", my_id).Where("status = ?", 0)
 	db = ParseOrder(db, params.Get("orderby"), []string{"join_date", "chat_room_serial_no", "robot_serial_no"}, []string{"join_date DESC"})
 	db = ParseSearch(db, params.Get("search"), []string{"chat_room_nick_name", "robot_nick_name"})
 	err := db.Count(&count).Error
@@ -66,15 +71,90 @@ func GetRobotJoinListv2(ctx echo.Context) error {
 		return ReturnError(ctx, "100002", err)
 	}
 	var ret []models.RobotJoin
+	//check count todo
 	err = db.Offset((page_num - 1) * page_size).Limit(page_size).Find(&ret).Error
 	if err != nil {
 		return ReturnError(ctx, "100002", err)
 	}
 	return ReturnData(ctx, map[string]interface{}{
-		"current_page": page_num,
-		"count":        count,
-		"list":         ret,
+		"current": map[string]interface{}{
+			"page_num":  page_num,
+			"page_size": page_size,
+		},
+		"count": count,
+		"list":  ret,
 	})
+}
+
+func DeleteRobotJoin(ctx echo.Context) error {
+	my_id := ctx.FormValue("my_id")
+	if my_id == "" {
+		return ReturnError(ctx, "100001", nil)
+	}
+	logSerialNoList := strings.Split(ctx.FormValue("log_serial_no"), ";")
+	if len(logSerialNoList) == 0 {
+		return ReturnError(ctx, "100003", nil)
+	}
+	var robotJoinList []models.RobotJoin
+	// 开群接口小U处判断，这里可以不强制使用事务，减少索表机率
+	err := DB.Where("my_id = ?", my_id).Where("status = ?", 0).Where("log_serial_no IN (?)", logSerialNoList).Find(&robotJoinList).Error
+	if err != nil {
+		return ReturnError(ctx, "100004", err)
+	}
+	if len(robotJoinList) == 0 {
+		return ReturnError(ctx, "100003", nil)
+	}
+	tx := DB.Begin()
+	for _, v := range robotJoinList {
+		err := v.SetStatusDelete(tx)
+		if err != nil {
+			tx.Rollback()
+			return ReturnError(ctx, "100005", err)
+		}
+	}
+	tx.Commit()
+	return ReturnData(ctx, nil)
+}
+
+func OpenChatRoom(ctx echo.Context) error {
+	my_id := ctx.FormValue("my_id")
+	if my_id == "" {
+		return ReturnError(ctx, "100001", nil)
+	}
+	logSerialNoList := strings.Split(ctx.FormValue("log_serial_no"), ";")
+	if len(logSerialNoList) == 0 {
+		return ReturnError(ctx, "100003", nil)
+	}
+	var robotJoinList []models.RobotJoin
+	// 开群接口小U处判断，这里可以不强制使用事务，减少索表机率
+	err := DB.Where("my_id = ?", my_id).Where("status = ?", 0).Where("log_serial_no IN (?)", logSerialNoList).Find(&robotJoinList).Error
+	if err != nil {
+		return ReturnError(ctx, "100004", err)
+	}
+	if len(robotJoinList) == 0 {
+		return ReturnError(ctx, "100003", nil)
+	}
+	var realLogSerialNoList []string
+	tx := DB.Begin()
+	for _, v := range robotJoinList {
+		err := v.SetStatusOpen(tx)
+		if err != nil {
+			tx.Rollback()
+			return ReturnError(ctx, "100005", err)
+		}
+		realLogSerialNoList = append(realLogSerialNoList, v.LogSerialNo)
+	}
+	ret, err := Client.PullRobotInChatRoomOpenChatRoom(map[string]string{
+		"vcSerialNoList": strings.Join(realLogSerialNoList, ";"),
+	}) //pull open chatroom
+	if err != nil {
+		tx.Rollback()
+		return ReturnError(ctx, "100006", err)
+	} else {
+		log.Println("debug:", ret)
+		tx.Commit()
+		return ReturnData(ctx, nil)
+	}
 }
 
 func pageParam(input interface{}, def int) (num int) {

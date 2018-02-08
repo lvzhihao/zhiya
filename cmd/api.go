@@ -82,7 +82,9 @@ var apiCmd = &cobra.Command{
 		app.POST("/api/applychatroomqrcode", apis.ApplyChatRoomQrCode)
 		// api v2 support for prism
 		app.POST("/api/v2/sendmessage", apis.SendMessageV2)
-		app.GET("/api/v2/robot/join", apis.GetRobotJoinListv2)
+		app.GET("/api/v2/robot/join", apis.GetRobotJoinList)
+		app.POST("/api/v2/robot/join/delete", apis.DeleteRobotJoin)
+		app.PUT("/api/v2/robot/chatroom/open", apis.OpenChatRoom)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},

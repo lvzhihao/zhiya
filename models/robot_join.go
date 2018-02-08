@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -20,4 +21,22 @@ type RobotJoin struct {
 	WxUserHeadImgUrl       string    `gorm:"type:varchar(1000)" json:"wx_user_head_img_url"`              //用户头像
 	JoinDate               time.Time `json:"join_date"`                                                   //入群时间
 	Status                 int32     `gorm:"index;default:0" json:"status"`                               //状态: 0 未处理 1 点击开通 2 逻辑删除
+}
+
+func (c *RobotJoin) SetStatusOpen(db *gorm.DB) error {
+	if c.ID > 0 && c.Status == 0 {
+		c.Status = 1
+		return db.Save(c).Error
+	} else {
+		return fmt.Errorf("no record")
+	}
+}
+
+func (c *RobotJoin) SetStatusDelete(db *gorm.DB) error {
+	if c.ID > 0 && c.Status == 0 {
+		c.Status = 2
+		return db.Save(c).Error
+	} else {
+		return fmt.Errorf("no record")
+	}
 }
