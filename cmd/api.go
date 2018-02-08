@@ -80,7 +80,7 @@ var apiCmd = &cobra.Command{
 		app.POST("/api/pyrobotloginqr", apis.PyRobotLoginQr)
 		app.POST("/api/chatroomkicking", apis.ChatRoomKicking)
 		app.POST("/api/applychatroomqrcode", apis.ApplyChatRoomQrCode)
-		// api v2
+		// api v2 support for prism
 		app.POST("/api/v2/sendmessage", apis.SendMessageV2)
 		app.GET("/api/v2/robot/join", apis.GetRobotJoinListv2)
 		// graceful shutdown

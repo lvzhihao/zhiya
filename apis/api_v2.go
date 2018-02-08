@@ -55,17 +55,26 @@ func GetRobotJoinListv2(ctx echo.Context) error {
 	if my_id == "" {
 		return ReturnError(ctx, "100001", nil)
 	}
+	var count int
 	page_size := pageParam(params.Get("page_size"), 10)
 	page_num := pageParam(params.Get("page_num"), 1)
-	db := DB.Where("my_id = ?", my_id).Offset((page_num - 1) * page_size).Limit(page_size)
+	db := DB.Where("my_id = ?", my_id)
 	db = ParseOrder(db, params.Get("orderby"), []string{"join_date", "chat_room_serial_no", "robot_serial_no"}, []string{"join_date DESC"})
 	db = ParseSearch(db, params.Get("search"), []string{"chat_room_nick_name", "robot_nick_name"})
-	var ret []models.RobotJoin
-	err := db.Find(&ret).Error
+	err := db.Count(&count).Error
 	if err != nil {
 		return ReturnError(ctx, "100002", err)
 	}
-	return ReturnData(ctx, ret)
+	var ret []models.RobotJoin
+	err = db.Offset((page_num - 1) * page_size).Limit(page_size).Find(&ret).Error
+	if err != nil {
+		return ReturnError(ctx, "100002", err)
+	}
+	return ReturnData(ctx, map[string]interface{}{
+		"current_page": page_num,
+		"count":        count,
+		"list":         ret,
+	})
 }
 
 func pageParam(input interface{}, def int) (num int) {
