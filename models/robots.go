@@ -11,6 +11,7 @@ import (
 type Robot struct {
 	gorm.Model
 	SerialNo       string `gorm:"size:100;unique_index" json:"serial_no"`           //设备编号
+	WxId           string `gorm:"size:200" json:"wx_id"`                            //微信号
 	ChatRoomCount  int32  `gorm:"index:idx_chat_room_count" json:"chat_room_count"` //设备开群个数
 	NickName       string `gorm:"size:255" json:"nick_name"`                        //设备昵称
 	Base64NickName string `gorm:"size:500" json:"base64_nick_name"`                 //设备昵称Base64

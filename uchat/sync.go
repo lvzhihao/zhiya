@@ -52,6 +52,7 @@ func SyncRobots(client *uchatlib.UchatClient, db *gorm.DB) error {
 		if err != nil {
 			return err
 		}
+		robot.WxId = goutils.ToString(v["vcWxAlias"])
 		robot.ChatRoomCount = goutils.ToInt32(v["nChatRoomCount"])
 		nickNameB, _ := base64.StdEncoding.DecodeString(v["vcBase64NickName"])
 		robot.NickName = goutils.ToString(nickNameB)

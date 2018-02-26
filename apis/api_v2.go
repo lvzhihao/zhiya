@@ -17,6 +17,7 @@ var (
 		"000000": "",
 		"100001": "my_id is empty",
 		"100003": "log_serial_no invaild",
+		"100007": "robot_serial_no is empty",
 	}
 )
 
@@ -153,6 +154,31 @@ func OpenChatRoom(ctx echo.Context) error {
 	} else {
 		log.Println("debug:", ret)
 		tx.Commit()
+		return ReturnData(ctx, nil)
+	}
+}
+
+func UpdateRobotInfo(ctx echo.Context) error {
+	robotSerialNo := ctx.FormValue("robot_serial_no")
+	if robotSerialNo == "" {
+		return ReturnError(ctx, "100007", nil)
+	}
+	var robot models.Robot
+	err := DB.Where("serial_no = ?", robotSerialNo).Where("status = ?", 10).First(&robot).Error
+	if err != nil {
+		return ReturnError(ctx, "100008", err)
+	}
+	err = Client.RobotInfoModify(map[string]string{
+		"vcRobotSerialNo": robot.SerialNo,
+		"vcRobotWxId":     robot.WxId,
+		"vcHeadImgUrl":    goutils.ToString(ctx.FormValue("head_img_url")),
+		"vcNickName":      goutils.ToString(ctx.FormValue("nick_name")),
+		"vcRemarkName":    goutils.ToString(ctx.FormValue("remark_name")),
+		"vcSign":          goutils.ToString(ctx.FormValue("person_sign")),
+	})
+	if err != nil {
+		return ReturnError(ctx, "100009", err)
+	} else {
 		return ReturnData(ctx, nil)
 	}
 }
