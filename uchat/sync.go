@@ -316,12 +316,6 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		return err
 	}
 	for _, v := range list {
-		applyCode, applyCodeerr := models.ApplyCodeUsed(db, goutils.ToString(v["vcApplyCodeSerialNo"]))
-		/*
-			if err != nil {
-				return err
-			}
-		*/
 		room := models.ChatRoom{}
 		chatRoomSerialNo := goutils.ToString(v["vcChatRoomSerialNo"])
 		err = room.Ensure(db, chatRoomSerialNo)
@@ -342,11 +336,25 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		if err != nil {
 			return err
 		}
+		applyCode, applyCodeerr := models.ApplyCodeUsed(db, goutils.ToString(v["vcApplyCodeSerialNo"]))
 		if applyCodeerr == nil {
 			robotRoom.MyId = applyCode.MyId
 			robotRoom.SubId = applyCode.SubId
-		} //如果有applyCode记录，可确定开群申请时的供应商和店铺身份
+		} else { //如果有applyCode记录，可确定开群申请时的供应商和店铺身份
+			var robotJoin models.RobotJoin
+			err := db.Where("robot_serial_no = ?", goutils.ToString(v["vcRobotSerialNo"])).
+				Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).
+				Where("wx_user_serial_no = ?", goutils.ToString(v["vcWxUserSerialNo"])).
+				Where("status = ?", 1).
+				Where("UNIX_TIMESTAMP(updated_at) >= ?", time.Now().Add(-60*time.Minute).Unix()).
+				First(&robotJoin).Error //1小时内有相同的开通记录
+			if err == nil {
+				robotRoom.MyId = robotJoin.MyId
+			}
+			//log.Fatal(robotJoin, err)
+		}
 		robotRoom.IsOpen = true
+		// 默认试用期
 		robotRoom.ExpiredDate = time.Now().Add(7 * 24 * time.Hour)
 		err = db.Save(&robotRoom).Error
 		if err != nil {

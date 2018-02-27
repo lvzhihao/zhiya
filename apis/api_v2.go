@@ -52,6 +52,10 @@ func SendMessageV2(ctx echo.Context) error {
 	return SendMessage(ctx)
 }
 
+func OverChatRoomV2(ctx echo.Context) error {
+	return OverChatRoom(ctx)
+}
+
 func GetRobotJoinList(ctx echo.Context) error {
 	params := ctx.QueryParams()
 	my_id := params.Get("my_id")

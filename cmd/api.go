@@ -86,6 +86,7 @@ var apiCmd = &cobra.Command{
 		app.POST("/api/v2/robot/join/delete", apis.DeleteRobotJoin)
 		app.PUT("/api/v2/robot/chatroom/open", apis.OpenChatRoom)
 		app.POST("/api/v2/robot/info", apis.UpdateRobotInfo)
+		app.POST("/api/v2/chatroom/over", apis.OverChatRoomV2)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},
