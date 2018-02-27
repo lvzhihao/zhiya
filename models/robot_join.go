@@ -12,6 +12,7 @@ type RobotJoin struct {
 	MyId                   string    `gorm:"type:varchar(100);index;not null" json:"my_id"`               //设备拥有者
 	LogSerialNo            string    `gorm:"type:varchar(30);unique_index;not null" json:"log_serial_no"` //入群日志ID
 	RobotSerialNo          string    `gorm:"type:varchar(100);index;not null" json:"robot_serial_no"`     //设备号
+	RobotNickName          string    `gorm:"type:varchar(200);not null" json:"robot_nick_name"`           //设备昵称
 	ChatRoomSerialNo       string    `gorm:"type:varchar(100);index;not null" json:"chat_room_serial_no"` //群编号
 	ChatRoomNickName       string    `gorm:"type:varchar(255)" json:"chat_room_nick_name"`                //群昵称
 	ChatRoomBase64NickName string    `gorm:"type:varchar(500)" json:"chat_room_base64_nick_name"`         //群昵称Base64

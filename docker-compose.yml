@@ -160,3 +160,15 @@ services:
       sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
       echo $${TZ} > /etc/timezone &&
       zhiya uchat --queue uchat.robot.friend.add" 
+  zhiya-queue-uchat.robot.chat.join:
+    image: edwinlll/zhiya:latest
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+      - DEBUG=true
+    volumes:
+      - ./.zhiya.yaml:/usr/local/zhiya/.zhiya.yaml
+    command: >
+      sh -c "ln -snf /usr/share/zoneinfo/$${TZ} /etc/localtime && 
+      echo $${TZ} > /etc/timezone &&
+      zhiya uchat --queue uchat.robot.chat.join" 

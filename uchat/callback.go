@@ -127,14 +127,21 @@ func SyncRobotChatJoinCallback(b []byte, db *gorm.DB) error {
 	for _, v := range list {
 		var robotChatJoin models.RobotJoin
 		var myRobot models.MyRobot
+		var robot models.Robot
 		err := db.Where("robot_serial_no = ?", v.RobotSerialNo).Where("expire_time > ?", time.Now().Unix()).First(&myRobot).Error
 		if err != nil {
 			robotChatJoin.MyId = ""
 		} else {
 			robotChatJoin.MyId = goutils.ToString(myRobot.MyId)
 		}
+		err = db.Where("serial_no = ?", v.RobotSerialNo).First(&robot).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 		robotChatJoin.LogSerialNo = v.LogSerialNo
 		robotChatJoin.RobotSerialNo = v.RobotSerialNo
+		robotChatJoin.RobotNickName = robot.NickName
 		robotChatJoin.ChatRoomSerialNo = v.ChatRoomSerialNo
 		robotChatJoin.ChatRoomNickName = v.ChatRoomNickName
 		robotChatJoin.ChatRoomBase64NickName = v.ChatRoomBase64NickName
