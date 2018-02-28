@@ -9,6 +9,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
+	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
 )
 
@@ -53,7 +54,31 @@ func SendMessageV2(ctx echo.Context) error {
 }
 
 func OverChatRoomV2(ctx echo.Context) error {
-	return OverChatRoom(ctx)
+	robotSerialNo := ctx.FormValue("robot_serial_no")
+	chatRoomSerialNo := ctx.FormValue("chat_room_serial_no")
+	comment := ctx.FormValue("comment")
+	if robotSerialNo == "" || chatRoomSerialNo == "" {
+		return ReturnError(ctx, "100012", fmt.Errorf("params empty"))
+	}
+	var robotChat models.RobotChatRoom
+	err := DB.Where("robot_serial_no = ?", robotSerialNo).Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&robotChat).Error
+	if err != nil {
+		return ReturnError(ctx, "100011", err)
+	}
+	tx := DB.Begin()
+	err = robotChat.Close(tx)
+	if err != nil {
+		tx.Rollback()
+		return ReturnError(ctx, "100011", err)
+	}
+	err = uchatlib.SetChatRoomOver(chatRoomSerialNo, comment, Client)
+	if err != nil {
+		tx.Rollback()
+		return ReturnError(ctx, "100010", err)
+	} else {
+		tx.Commit()
+		return ReturnData(ctx, "success")
+	}
 }
 
 func GetRobotJoinList(ctx echo.Context) error {
