@@ -57,26 +57,26 @@ var InitCmdTypeValues = `
 `
 
 var InitDBModel = []interface{}{
-	&models.RobotApplyCode{},      //机器人开通验证码，通过这里的记录验证开通的群属于谁
-	&models.Robot{},               //设备列表
-	&models.MyRobot{},             //设备归属关系
-	&models.ChatRoom{},            //微信群列表
-	&models.ChatRoomTag{},         //微信群TAG分组
-	&models.RobotChatRoom{},       //微信群归属关系
-	&models.CmdType{},             //命令类型
-	&models.ChatRoomCmd{},         //微信群命令
-	&models.MyCmd{},               //供应商命令
-	&models.SubCmd{},              //代理商命令
-	&models.TagCmd{},              //TAG分组命令
-	&models.MessageQueue{},        //发送消息队列
-	&models.ChatRoomMember{},      //微信群用户
-	&models.MySubChatRoomConfig{}, //代理商限制配置
-	&models.TulingConfig{},        //图灵机器人配置
-	&models.RobotFriend{},         //设备好友信息
-	&models.MyRobotRenew{},        //设备续费日志
-	&models.WorkTemplate{},        //指令模板
-	&models.WorkTemplateCmd{},     //指令详情
-	&models.RobotJoin{},           //机器人入群信息
+	&models.RobotApplyCode{},       //机器人开通验证码，通过这里的记录验证开通的群属于谁
+	&models.Robot{},                //设备列表
+	&models.MyRobot{},              //设备归属关系
+	&models.ChatRoom{},             //微信群列表
+	&models.ChatRoomTag{},          //微信群TAG分组
+	&models.RobotChatRoom{},        //微信群归属关系
+	&models.CmdType{},              //命令类型
+	&models.ChatRoomCmd{},          //微信群命令
+	&models.MyCmd{},                //供应商命令
+	&models.SubCmd{},               //代理商命令
+	&models.TagCmd{},               //TAG分组命令
+	&models.MessageQueue{},         //发送消息队列
+	&models.ChatRoomMember{},       //微信群用户
+	&models.MySubChatRoomConfig{},  //代理商限制配置
+	&models.TulingConfig{},         //图灵机器人配置
+	&models.RobotFriend{},          //设备好友信息
+	&models.MyRobotRenew{},         //设备续费日志
+	&models.WorkTemplate{},         //指令模板
+	&models.ChatRoomWorkTemplate{}, //群指令配置
+	&models.RobotJoin{},            //机器人入群信息
 }
 
 var receiveQueueConfig = map[string]string{

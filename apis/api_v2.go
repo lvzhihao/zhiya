@@ -11,6 +11,7 @@ import (
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/models"
+	"github.com/lvzhihao/zhiya/uchat"
 )
 
 var (
@@ -209,6 +210,85 @@ func UpdateRobotInfo(ctx echo.Context) error {
 		return ReturnError(ctx, "100009", err)
 	} else {
 		return ReturnData(ctx, nil)
+	}
+}
+
+func CreateWorkTemplate(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	subId := ctx.FormValue("sub_id")
+	name := ctx.FormValue("name")
+	cmdType := ctx.FormValue("cmd_type")
+	cmdValue := ctx.FormValue("cmd_value")
+	cmdParams := ctx.FormValue("cmd_params")
+	cmdReply := ctx.FormValue("cmd_reply")
+	ret, err := uchat.CreateWorkTemplate(DB, myId, subId, name, cmdType, cmdValue, cmdParams, cmdReply)
+	if err != nil {
+		return ReturnError(ctx, "100013", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
+func UpdateWorkTemplate(ctx echo.Context) error {
+	workTemplateId := ctx.FormValue("work_template_id")
+	name := ctx.FormValue("name")
+	cmdValue := ctx.FormValue("cmd_value")
+	cmdParams := ctx.FormValue("cmd_params")
+	cmdReply := ctx.FormValue("cmd_reply")
+	var status int32
+	if ctx.FormValue("status") != "" {
+		status = goutils.ToInt32(ctx.FormValue("status"))
+	} else {
+		status = -1 //不修改
+	}
+	ret, err := uchat.UpdateWorkTemplate(DB, workTemplateId, name, cmdValue, cmdParams, cmdReply, int8(status))
+	if err != nil {
+		return ReturnError(ctx, "100014", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
+func WorkTemplateList(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	subId := ctx.FormValue("sub_id")
+	cmdType := ctx.FormValue("cmd_type")
+	ret, err := uchat.ListWorkTemplate(DB, myId, subId, cmdType)
+	if err != nil {
+		return ReturnError(ctx, "100015", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
+func WorkTemplate(ctx echo.Context) error {
+	workTemplateId := ctx.FormValue("work_template_id")
+	ret, err := uchat.GetWorkTemplate(DB, workTemplateId)
+	if err != nil {
+		return ReturnError(ctx, "100017", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
+func SetWorkTemplateDefault(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	subId := ctx.FormValue("sub_id")
+	workTemplateId := ctx.FormValue("work_template_id")
+	ret, err := uchat.SetDefaultWorkTemplate(DB, myId, subId, workTemplateId)
+	if err != nil {
+		return ReturnError(ctx, "100016", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
+func CmdTypeList(ctx echo.Context) error {
+	list, err := uchat.ListCmdType(DB)
+	if err != nil {
+		return ReturnError(ctx, "100020", err)
+	} else {
+		return ReturnData(ctx, list)
 	}
 }
 
