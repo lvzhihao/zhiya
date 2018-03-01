@@ -245,3 +245,35 @@ func ApplyChatRoomTemplate(db *gorm.DB, myId, subId, workTemplateId string, chat
 	data, err = GetWorkTemplate(db, ret.WorkTemplateId)
 	return
 }
+
+func GetChatRoomTemplates(db *gorm.DB, chat_room_serial_no string) (data interface{}, err error) {
+	var chatRoom models.ChatRoom
+	err = db.Where("chat_room_serial_no = ?", chat_room_serial_no).First(&chatRoom).Error
+	if err != nil {
+		return
+	}
+	var temps []models.ChatRoomWorkTemplate
+	err = db.Where("chat_room_serial_no = ?", chatRoom.ChatRoomSerialNo).Find(&temps).Error
+	if err != nil {
+		return
+	}
+	var templateIds []string
+	var workTemplate []models.WorkTemplate
+	if len(temps) > 0 {
+		for _, temp := range temps {
+			templateIds = append(templateIds, temp.WorkTemplateId)
+		}
+		err = db.Where("work_template_id IN (?)", templateIds).Find(&workTemplate).Error
+		if err != nil {
+			return
+		}
+	}
+	data = struct {
+		models.ChatRoom
+		UsedWorkTemplates []models.WorkTemplate `json:"used_work_templates"`
+	}{
+		chatRoom,
+		workTemplate,
+	}
+	return
+}

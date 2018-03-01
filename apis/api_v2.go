@@ -296,10 +296,20 @@ func ApplyWorkTemplate(ctx echo.Context) error {
 	myId := ctx.FormValue("my_id")
 	subId := ctx.FormValue("sub_id")
 	workTemplateId := ctx.FormValue("work_template_id")
-	chatRoomList := strings.Split(ctx.FormValue("chat_room"), ",")
+	chatRoomList := strings.Split(strings.TrimSpace(ctx.FormValue("chat_rooms_list")), ",")
 	ret, err := uchat.ApplyChatRoomTemplate(DB, myId, subId, workTemplateId, chatRoomList)
 	if err != nil {
 		return ReturnError(ctx, "100018", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
+func GetChatRoomTemplates(ctx echo.Context) error {
+	chat_room_serial_no := ctx.FormValue("chat_room_serial_no")
+	ret, err := uchat.GetChatRoomTemplates(DB, chat_room_serial_no)
+	if err != nil {
+		return ReturnError(ctx, "100019", err)
 	} else {
 		return ReturnData(ctx, ret)
 	}
