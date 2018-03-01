@@ -2,8 +2,11 @@ package uchat
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/zhiya/models"
 )
 
@@ -84,9 +87,20 @@ func ListWorkTemplate(db *gorm.DB, myId, subId, cmdType string) (list *[]models.
 	return
 }
 
-func GetWorkTemplate(db *gorm.DB, workTemplateId string) (ret *models.WorkTemplate, err error) {
-	ret = &models.WorkTemplate{}
-	err = db.Where("work_template_id = ?", workTemplateId).First(ret).Error
+func GetWorkTemplate(db *gorm.DB, workTemplateId string) (ret interface{}, err error) {
+	var temp models.WorkTemplate
+	err = db.Where("work_template_id = ?", workTemplateId).First(&temp).Error
+	if err != nil {
+		return
+	}
+	cw, _ := GetChatRoomTemplate(db, temp.MyId, temp.SubId, temp.WorkTemplateId)
+	ret = struct {
+		models.WorkTemplate
+		AllowChatRooms *[]models.ChatRoomWorkTemplate `json:"allow_chat_rooms"`
+	}{
+		temp,
+		cw,
+	}
 	return
 }
 
@@ -121,5 +135,113 @@ func ListCmdType(db *gorm.DB) (list *[]models.CmdType, err error) {
 func GetCmdType(db *gorm.DB, typeFlag string) (ret *models.CmdType, err error) {
 	ret = &models.CmdType{}
 	err = db.Where("type_flag = ?", typeFlag).First(ret).Error
+	return
+}
+
+func GetChatRoomTemplate(db *gorm.DB, myId, subId, workTemplateId string) (list *[]models.ChatRoomWorkTemplate, err error) {
+	ret := &models.WorkTemplate{}
+	err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Where("work_template_id = ?", workTemplateId).First(ret).Error
+	if err != nil {
+		return
+	}
+	list = &[]models.ChatRoomWorkTemplate{}
+	err = db.Where("work_template_id = ?", ret.WorkTemplateId).Find(list).Error
+	return
+}
+
+func CountWorkTemplateChatRoom(db *gorm.DB, myId, subId string) error {
+	var workTemplateList []models.WorkTemplate
+	err := db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Find(&workTemplateList).Error
+	if err != nil {
+		return err
+	}
+	for _, temp := range workTemplateList {
+		var count int32
+		err := db.Model(&models.ChatRoomWorkTemplate{}).Where("work_template_id = ?", temp.WorkTemplateId).Count(&count).Error
+		if err != nil {
+			continue
+		}
+		temp.ChatRoomCount = count
+		db.Save(&temp)
+	} // 些数据不影响主流程，不使用事务，如出错则不处理
+	return nil
+}
+
+func ApplyChatRoomTemplate(db *gorm.DB, myId, subId, workTemplateId string, chatRoomList []string) (data interface{}, err error) {
+	ret := &models.WorkTemplate{}
+	err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Where("work_template_id = ?", workTemplateId).First(ret).Error
+	if err != nil {
+		return
+	}
+	var realRooms []models.RobotChatRoom
+	//todo fix expires time
+	err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("is_open = ?", true).Where("chat_room_serial_no IN (?)", chatRoomList).Find(&realRooms).Error
+	if err != nil {
+		return
+	}
+	if len(realRooms) == 0 {
+		err = fmt.Errorf("There is no valid ChatRoomSeraialNo")
+		return
+	}
+	var reals []string
+	for _, room := range realRooms {
+		reals = append(reals, room.ChatRoomSerialNo)
+	}
+	//尽量节省索表时，不使用replace into等操作，尽量使事务操作在500ms以内
+	tx := db.Begin()
+	err = tx.Model(&models.ChatRoomWorkTemplate{}).Where("chat_room_serial_no IN (?)", reals).Where("cmd_type = ?", ret.CmdType).Update("work_template_id", ret.WorkTemplateId).Error
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+	var existsChatRoom []models.ChatRoomWorkTemplate
+	err = tx.Where("work_template_id = ?", ret.WorkTemplateId).Find(&existsChatRoom).Error
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+	var exists []string
+	for _, room := range existsChatRoom {
+		exists = append(exists, room.ChatRoomSerialNo)
+	}
+	//INSERT INTO table (a, b, c) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)
+	var inserts []string
+	var values []interface{}
+	for _, serialNo := range reals {
+		if goutils.InStringSlice(exists, serialNo) {
+			continue
+		}
+		inserts = append(inserts, "(?, ?, ?, ?)")
+		values = append(values, time.Now(), serialNo, ret.CmdType, ret.WorkTemplateId)
+	}
+	if len(inserts) > 0 {
+		tableName := db.NewScope(&models.ChatRoomWorkTemplate{}).TableName()
+		err = tx.Exec("INSERT INTO `"+tableName+"` (`created_at`, `chat_room_serial_no`, `cmd_type`, `work_template_id`) VALUES "+strings.Join(inserts, ", "), values...).Error
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		return
+	}
+	/*old
+	for _, room := range realRooms {
+		var obj models.ChatRoomWorkTemplate
+		err = db.Where(models.ChatRoomWorkTemplate{ChatRoomSerialNo: room.ChatRoomSerialNo, CmdType: ret.CmdType}).FirstOrInit(&obj).Error
+		if err != nil {
+			return
+		}
+		obj.WorkTemplateId = ret.WorkTemplateId
+		err = tx.Save(&obj).Error
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+	}
+	*/
+	go CountWorkTemplateChatRoom(db, myId, subId) //此运营模板所绑定的群，可以异高操作
+	data, err = GetWorkTemplate(db, ret.WorkTemplateId)
 	return
 }

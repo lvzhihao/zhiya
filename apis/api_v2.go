@@ -292,6 +292,19 @@ func CmdTypeList(ctx echo.Context) error {
 	}
 }
 
+func ApplyWorkTemplate(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	subId := ctx.FormValue("sub_id")
+	workTemplateId := ctx.FormValue("work_template_id")
+	chatRoomList := strings.Split(ctx.FormValue("chat_room"), ",")
+	ret, err := uchat.ApplyChatRoomTemplate(DB, myId, subId, workTemplateId, chatRoomList)
+	if err != nil {
+		return ReturnError(ctx, "100018", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
 func pageParam(input interface{}, def int) (num int) {
 	num = int(goutils.ToInt32(input))
 	if num == 0 {
