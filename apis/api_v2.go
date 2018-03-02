@@ -232,9 +232,9 @@ func CreateWorkTemplate(ctx echo.Context) error {
 func UpdateWorkTemplate(ctx echo.Context) error {
 	workTemplateId := ctx.FormValue("work_template_id")
 	name := ctx.FormValue("name")
-	cmdValue := ctx.FormValue("cmd_value")
-	cmdParams := ctx.FormValue("cmd_params")
-	cmdReply := ctx.FormValue("cmd_reply")
+	cmdValue := goutils.EchoCtxFormNullString(ctx, "cmd_value")
+	cmdParams := goutils.EchoCtxFormNullString(ctx, "md_params")
+	cmdReply := goutils.EchoCtxFormNullString(ctx, "cmd_reply")
 	var status int32
 	if ctx.FormValue("status") != "" {
 		status = goutils.ToInt32(ctx.FormValue("status"))

@@ -54,7 +54,7 @@ func CreateWorkTemplate(db *gorm.DB, myId, subId, name, cmdType, cmdValue, cmdPa
 	return
 }
 
-func UpdateWorkTemplate(db *gorm.DB, workTemplateId, name, cmdValue, cmdParams, cmdReply string, status int8) (ret *models.WorkTemplate, err error) {
+func UpdateWorkTemplate(db *gorm.DB, workTemplateId, name string, cmdValue, cmdParams, cmdReply *goutils.NullString, status int8) (ret *models.WorkTemplate, err error) {
 	ret = &models.WorkTemplate{}
 	err = db.Where("work_template_id = ?", workTemplateId).First(ret).Error
 	if err != nil {
@@ -70,9 +70,15 @@ func UpdateWorkTemplate(db *gorm.DB, workTemplateId, name, cmdValue, cmdParams, 
 		} // 判断如果是默认模板的话不能停用或删除
 		ret.Status = status
 	}
-	ret.CmdValue = cmdValue
-	ret.CmdParams = cmdParams
-	ret.CmdReply = cmdReply
+	if cmdValue.Valid {
+		ret.CmdValue = cmdValue.String
+	}
+	if cmdParams.Valid {
+		ret.CmdParams = cmdParams.String
+	}
+	if cmdReply.Valid {
+		ret.CmdReply = cmdReply.String
+	}
 	err = db.Save(ret).Error
 	return
 }

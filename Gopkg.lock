@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/lvzhihao/goutils"
   packages = ["."]
-  revision = "8313e398aa27a81ab19f43f31e1f3a1f6a8ea95e"
+  revision = "f11e6bc9a288ad8d11396de2f03a42202ffd76f2"
 
 [[projects]]
   branch = "master"

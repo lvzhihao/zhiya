@@ -1,6 +1,7 @@
 package goutils
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,6 +32,18 @@ func ToString(v interface{}) (s string) {
 		s = string(b)
 	case error:
 		s = v.(error).Error()
+	case NullString:
+		if v.(NullString).Valid {
+			s = v.(NullString).String
+		} else {
+			s = ""
+		}
+	case sql.NullString:
+		if v.(sql.NullString).Valid {
+			s = v.(sql.NullString).String
+		} else {
+			s = ""
+		}
 	default:
 		b, err := json.Marshal(v)
 		if err == nil {
