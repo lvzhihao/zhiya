@@ -20,10 +20,11 @@ func CreateQueue(api, user, passwd, vhost, name string) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusCreated {
+		return nil
+	} else {
 		return fmt.Errorf("CreateQueue StatusError: %d, %v", resp.StatusCode, resp)
 	}
-	return nil
 }
 
 func BindRoutingKey(api, user, passwd, vhost, name, exchange, key string) error {

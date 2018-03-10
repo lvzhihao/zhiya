@@ -21,3 +21,8 @@ docker-uhub:
 	sudo docker tag edwinlll/zhiya:latest uhub.service.ucloud.cn/mmzs/zhiya:latest
 	sudo docker push uhub.service.ucloud.cn/mmzs/zhiya:latest
 	sudo docker rmi uhub.service.ucloud.cn/mmzs/zhiya:latest
+
+docker-ali:
+	sudo docker tag edwinlll/zhiya:latest registry.cn-hangzhou.aliyuncs.com/weishangye/zhiya:latest
+	sudo docker push registry.cn-hangzhou.aliyuncs.com/weishangye/zhiya:latest
+	sudo docker rmi registry.cn-hangzhou.aliyuncs.com/weishangye/zhiya:latest
