@@ -23,6 +23,7 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
@@ -66,6 +67,10 @@ var apiCmd = &cobra.Command{
 		apis.DB = db
 		apis.Client = client
 		apis.Tool = tool
+
+		// check api v2 backend token
+		app.Use(CheckBackendToken)
+
 		// action
 		app.POST("/api/ping", func(ctx echo.Context) error {
 			return ctx.String(http.StatusOK, "pong")
@@ -81,6 +86,7 @@ var apiCmd = &cobra.Command{
 		app.POST("/api/chatroomkicking", apis.ChatRoomKicking)
 		app.POST("/api/applychatroomqrcode", apis.ApplyChatRoomQrCode)
 		// api v2 support for prism
+
 		app.POST("/api/v2/sendmessage", apis.SendMessageV2)
 		app.GET("/api/v2/robot/join", apis.GetRobotJoinList)
 		app.POST("/api/v2/robot/join/delete", apis.DeleteRobotJoin)
@@ -98,6 +104,17 @@ var apiCmd = &cobra.Command{
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},
+}
+
+func CheckBackendToken(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if strings.Index(c.Path(), "/api/v2") == 0 {
+			if viper.GetString("api_v2_backend_token") == "" || c.QueryParam("backend_token") != viper.GetString("api_v2_backend_token") {
+				return c.NoContent(http.StatusUnauthorized)
+			}
+		}
+		return next(c)
+	}
 }
 
 func init() {
