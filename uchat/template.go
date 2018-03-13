@@ -64,8 +64,8 @@ func UpdateWorkTemplate(db *gorm.DB, workTemplateId, name string, cmdValue, cmdP
 		ret.Name = name
 	}
 	if status >= 0 && status <= 2 {
-		if ret.IsDefault && status != 0 {
-			err = fmt.Errorf("default template must enabled, please change default template")
+		if ret.IsDefault && status == 2 {
+			err = fmt.Errorf("default template don't delete, please change default template")
 			return
 		} // 判断如果是默认模板的话不能停用或删除
 		ret.Status = status
