@@ -92,10 +92,11 @@ var receiveQueueConfig = map[string]string{
 	"uchat.robot.chat.join":     "uchat.robot.chat.join",
 	"uchat.robot.deny":          "uchat.robot.deny",
 	"uchat.send.messages.error": "uchat.send.messages.error",
-	"uchat.log":                 "uchat.#",
 	"uchat.chat.qrcode":         "uchat.chat.qrcode",
 	"uchat.robot.friend.add":    "uchat.robot.friend.add",
 	//"uchat.robot.message.private": "uchat.robot.message.private",
+	"uchat.log":      "uchat.#",
+	"uchat.messages": "uchat.chat.message",
 }
 
 // migrateCmd represents the migrate command

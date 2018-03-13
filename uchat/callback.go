@@ -128,7 +128,9 @@ func SyncRobotChatJoinCallback(b []byte, db *gorm.DB) error {
 		var robotChatJoin models.RobotJoin
 		var myRobot models.MyRobot
 		var robot models.Robot
-		err := db.Where("robot_serial_no = ?", v.RobotSerialNo).Where("expire_time > ?", time.Now().Unix()).First(&myRobot).Error
+		//err := db.Where("robot_serial_no = ?", v.RobotSerialNo).Where("expire_time > ?", time.Now().Unix()).First(&myRobot).Error
+		// todo 机器人后台添加时需要加上过期时间
+		err := db.Where("robot_serial_no = ?", v.RobotSerialNo).First(&myRobot).Error
 		if err != nil {
 			robotChatJoin.MyId = ""
 		} else {
