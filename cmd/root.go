@@ -98,4 +98,5 @@ func initConfig() {
 
 	// 设置hashids配置
 	uchat.InitHashIds(viper.GetString("hashids_slat"), viper.GetInt("hashids_minlen"))
+	uchat.UseWorkTemplate = viper.GetBool("use_work_template")
 }

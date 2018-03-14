@@ -26,6 +26,7 @@ var (
 	DefaultMemberJoinWelcome      string        = ""
 	DefaultMemberJoinSendInterval time.Duration = 60 * time.Second
 	HashID                        *hashids.HashID
+	UseWorkTemplate               bool = false
 )
 
 //初始化hashids
@@ -185,6 +186,8 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, d
 				robotChatRoom.Close(db)
 			}
 		}
+		room.Name = goutils.ToString(rst["vcChatRoomName"])
+		room.Base64Name = base64.StdEncoding.EncodeToString([]byte(room.Name))
 		room.Status = goutils.ToInt32(rst["nStatus"])
 		room.RobotInStatus = goutils.ToInt32(rst["nRobotInStatus"])
 		room.RobotSerialNo = goutils.ToString(rst["vcRobotSerialNo"])
@@ -453,6 +456,22 @@ func SyncMemberJoinCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 	return nil
 }
 
+func FetchChatRoomMemberJoinMessageTemplate(db *gorm.DB, chatRoomSerialNo string) (string, time.Duration) {
+	template, err := GetChatRoomValidTemplate(db, chatRoomSerialNo, "member.join.welcome")
+	if err != nil {
+		return "", DefaultMemberJoinSendInterval
+	}
+	var params map[string]interface{}
+	err = json.Unmarshal([]byte(template.CmdParams), &params)
+	var interval = DefaultMemberJoinSendInterval
+	if err == nil {
+		if iter, ok := params["interval"]; ok {
+			interval = time.Duration(goutils.ToInt32(iter)) * time.Second
+		}
+	}
+	return template.CmdReply, interval
+}
+
 /*
   发送群内信息
 */
@@ -467,9 +486,14 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db,
 		message.WeixinSerialNo = message.WeixinSerialNo + "," + wxSerialNo //添加@新成员
 	} else {
 		log.Println("create join message")
+		sendInterval := DefaultMemberJoinSendInterval
 		//new message
 		if msg == "" {
-			msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
+			if UseWorkTemplate == true {
+				msg, sendInterval = FetchChatRoomMemberJoinMessageTemplate(db, charRoomSerialNo)
+			} else {
+				msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
+			}
 		}
 		if msg == "" {
 			tx.Rollback()
@@ -496,7 +520,7 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db,
 		}
 		message.SendType = 10 //第一个新成员加入后，30秒内所有加入成员一起发送，类型10
 		message.SendStatus = 0
-		message.SendTime = time.Now().Add(DefaultMemberJoinSendInterval)
+		message.SendTime = time.Now().Add(sendInterval)
 		err := tx.Create(message).Error
 		if err != nil {
 			tx.Rollback()

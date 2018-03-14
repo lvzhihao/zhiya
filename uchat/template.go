@@ -283,3 +283,26 @@ func GetChatRoomTemplates(db *gorm.DB, chat_room_serial_no string) (data interfa
 	}
 	return
 }
+
+func GetChatRoomValidTemplate(db *gorm.DB, chat_room_serial_no, cmd_type string) (data *models.WorkTemplate, err error) {
+	data = &models.WorkTemplate{}
+	var robotChatRoom models.RobotChatRoom
+	// 群是否有关联设备并已经开启
+	err = db.Where("chat_room_serial_no = ?", chat_room_serial_no).Where("is_open = ?", 1).First(&robotChatRoom).Error
+	if err != nil {
+		return
+	}
+	var ct models.ChatRoomWorkTemplate
+	// 群目前所关联类型的运营模板
+	err = db.Where("chat_room_serial_no = ?", robotChatRoom.ChatRoomSerialNo).Where("cmd_type = ?", cmd_type).First(&ct).Error
+	if err == nil && ct.WorkTemplateId != "" {
+		// 关联模板是否为群当前所属商家并且运营模板当前为开启
+		err = db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("status = ?", 0).First(&data).Error
+		if err == nil {
+			return
+		}
+	}
+	// 读取前当商家关联类型默认模板并已经开启
+	err = db.Where("cmd_type = ?", cmd_type).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("is_default = ?", true).Where("status = ?", 0).First(&data).Error
+	return
+}

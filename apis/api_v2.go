@@ -200,11 +200,11 @@ func UpdateRobotInfo(ctx echo.Context) error {
 	}
 	err = Client.RobotInfoModify(map[string]string{
 		"vcRobotSerialNo": robot.SerialNo,
-		"vcRobotWxId":     robot.WxId,
-		"vcHeadImgUrl":    goutils.ToString(ctx.FormValue("head_img_url")),
-		"vcNickName":      goutils.ToString(ctx.FormValue("nick_name")),
-		"vcRemarkName":    goutils.ToString(ctx.FormValue("remark_name")),
-		"vcSign":          goutils.ToString(ctx.FormValue("person_sign")),
+		//"vcRobotWxId":     robot.WxId,
+		"vcHeadImgUrl": goutils.ToString(ctx.FormValue("head_img_url")),
+		"vcNickName":   goutils.ToString(ctx.FormValue("nick_name")),
+		"vcRemarkName": goutils.ToString(ctx.FormValue("remark_name")),
+		"vcSign":       goutils.ToString(ctx.FormValue("person_sign")),
 	})
 	if err != nil {
 		return ReturnError(ctx, "100009", err)
@@ -233,7 +233,7 @@ func UpdateWorkTemplate(ctx echo.Context) error {
 	workTemplateId := ctx.FormValue("work_template_id")
 	name := ctx.FormValue("name")
 	cmdValue := goutils.EchoCtxFormNullString(ctx, "cmd_value")
-	cmdParams := goutils.EchoCtxFormNullString(ctx, "md_params")
+	cmdParams := goutils.EchoCtxFormNullString(ctx, "cmd_params")
 	cmdReply := goutils.EchoCtxFormNullString(ctx, "cmd_reply")
 	var status int32
 	if ctx.FormValue("status") != "" {
