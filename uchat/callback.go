@@ -1,6 +1,7 @@
 package uchat
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -18,11 +19,19 @@ type ChatRoomMembersList struct {
 }
 
 /*
+  小U的回调有时候会有换行符 \n，导致json decode失败，此方法兼容这个问题
+*/
+func FixUchatJsonBinary(b []byte) []byte {
+	return bytes.Replace(b, []byte("\n"), []byte(""), -1)
+}
+
+/*
   群会员信息回调
   支持重复调用
 */
 func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 	var rst map[string]interface{}
+	b = FixUchatJsonBinary(b)
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
 		return err
@@ -37,7 +46,7 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		return errors.New("empty Data")
 	}
 	var list ChatRoomMembersList
-	err = json.Unmarshal([]byte(strings.TrimRight(strings.TrimLeft(goutils.ToString(data), "["), "]")), &list)
+	err = json.Unmarshal([]byte(strings.TrimSpace(strings.TrimRight(strings.TrimLeft(goutils.ToString(data), "["), "]"))), &list)
 	if err != nil {
 		return err
 	}
@@ -57,8 +66,12 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		}
 		member.WxId = goutils.ToString(v["vcWeixinId"])
 		//member.NickName = goutils.ToString(v["vcNickName"])
-		nickNameB, _ := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
-		member.NickName = goutils.ToString(nickNameB)
+		nickNameB, err := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
+		if err != nil {
+			member.NickName = goutils.ToString(v["vcNickName"])
+		} else {
+			member.NickName = goutils.ToString(nickNameB)
+		}
 		member.Base64NickName = goutils.ToString(v["vcBase64NickName"])
 		member.HeadImages = goutils.ToString(v["vcHeadImages"])
 		member.JoinChatRoomType = goutils.ToInt32(v["nJoinChatRoomType"])
