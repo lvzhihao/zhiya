@@ -121,6 +121,30 @@ var syncCmd = &cobra.Command{
 				num++
 			}
 			sugar.Infof("count: %d", num)
+		case "chatmembers":
+			// 有效群的会员数据更新
+			rows, err := db.Model(&models.ChatRoom{}).Select("chat_room_serial_no").Where("status = ?", 10).Rows()
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			defer rows.Close()
+			num := 0
+			for rows.Next() {
+				var no string
+				err := rows.Scan(&no)
+				if err != nil {
+					sugar.Error(err)
+				} else {
+					err := uchat.SyncChatRoomMembers(no, client)
+					if err != nil {
+						sugar.Error(err)
+					} else {
+						sugar.Infof("members sync success: %s\n", no)
+					}
+				}
+				num++
+			}
+			sugar.Infof("count: %d", num)
 		case "openmessage":
 			chats, err := cmd.Flags().GetString("chats")
 			if err != nil {
@@ -168,7 +192,7 @@ var syncCmd = &cobra.Command{
 				}
 			}
 		default:
-			sugar.Warn("only support robot/chat/member/chatstatus")
+			sugar.Warn("only support robot/chat/member/chatstatus/chatmembers")
 		}
 	},
 }
