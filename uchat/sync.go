@@ -370,6 +370,8 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		}
 		// sync member info
 		SyncChatRoomMembers(chatRoomSerialNo, client)
+		// sync chat qr code
+		uchatlib.ApplyChatRoomQrCode(chatRoomSerialNo, client)
 		// open get message
 		log.Println(uchatlib.SetChatRoomOpenGetMessage(chatRoomSerialNo, client))
 	}
