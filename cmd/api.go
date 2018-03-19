@@ -101,6 +101,8 @@ var apiCmd = &cobra.Command{
 		app.POST("/api/v2/work/template/default", apis.SetWorkTemplateDefault)
 		app.POST("/api/v2/work/template/apply", apis.ApplyWorkTemplate)
 		app.GET("/api/v2/chatroom/templates", apis.GetChatRoomTemplates)
+		app.GET("/api/v2/robot/valid/one", apis.GetValidRobot)
+		app.POST("/api/v2/robot/valid", apis.UpdateRobotExpireTime)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},

@@ -3,8 +3,10 @@ package apis
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
@@ -313,6 +315,50 @@ func GetChatRoomTemplates(ctx echo.Context) error {
 	} else {
 		return ReturnData(ctx, ret)
 	}
+}
+
+func GetValidRobot(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	//subId := ctx.FormValue("sub_id")
+	limit := ctx.FormValue("limit")
+
+	limitNum := 10
+	if limit != "" {
+		limitNum = int(goutils.ToInt(limit))
+	}
+
+	// 查找此用户可用当天加群机器人
+	robots, err := models.FindValidCodeRobotByMyId(DB, myId, limitNum)
+	if err != nil {
+		return ReturnError(ctx, "100024", err)
+	} else {
+		//随机选取一个机器人
+		numn := rand.Intn(len(robots))
+		return ReturnData(ctx, robots[numn])
+	}
+}
+
+func UpdateRobotExpireTime(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	expire := ctx.FormValue("expire")
+
+	myRobots, err := models.FindRobotByMyId(DB, myId)
+	if err != nil {
+		return ReturnError(ctx, "100025", err)
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	date, err := time.ParseInLocation("2006-01-02 15:04:05", fmt.Sprintf("%s 23:59:59", strings.TrimSpace(expire)), loc)
+	if err != nil {
+		return ReturnError(ctx, "100026", err)
+	}
+	for _, robot := range myRobots {
+		robot.ExpireTime = date
+		err := DB.Save(&robot).Error
+		if err != nil {
+			return ReturnError(ctx, "100027", err)
+		}
+	}
+	return ReturnData(ctx, "success")
 }
 
 func pageParam(input interface{}, def int) (num int) {

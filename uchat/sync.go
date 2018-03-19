@@ -55,13 +55,18 @@ func SyncRobots(client *uchatlib.UchatClient, db *gorm.DB) error {
 		}
 		robot.WxId = goutils.ToString(v["vcWxAlias"])
 		robot.ChatRoomCount = goutils.ToInt32(v["nChatRoomCount"])
-		nickNameB, _ := base64.StdEncoding.DecodeString(v["vcBase64NickName"])
-		robot.NickName = goutils.ToString(nickNameB)
+		nickNameB, err := base64.StdEncoding.DecodeString(v["vcBase64NickName"])
+		if err != nil {
+			robot.NickName = goutils.ToString(v["vcNickName"])
+		} else {
+			robot.NickName = goutils.ToString(nickNameB)
+		}
 		robot.Base64NickName = v["vcBase64NickName"]
 		robot.HeadImages = v["vcHeadImages"]
 		robot.CodeImages = v["vcCodeImages"]
 		robot.Status = goutils.ToInt32(v["nStatus"])
 		err = db.Save(&robot).Error
+		log.Printf("%+v\n", robot)
 		if err != nil {
 			return err
 		}
