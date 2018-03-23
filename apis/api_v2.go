@@ -1,10 +1,14 @@
 package apis
 
 import (
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -23,6 +27,7 @@ var (
 		"100003": "log_serial_no invaild",
 		"100007": "robot_serial_no is empty",
 	}
+	AmrConvertServer string = "http://127.0.0.1:8299"
 )
 
 type ReturnType struct {
@@ -359,6 +364,65 @@ func UpdateRobotExpireTime(ctx echo.Context) error {
 		}
 	}
 	return ReturnData(ctx, "success")
+}
+
+func AmrConver(ctx echo.Context) error {
+	params := ctx.QueryParams()
+	source := params.Get("source")
+	if source == "" {
+		return ReturnError(ctx, "100028", nil)
+	}
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	URL, err := url.Parse(AmrConvertServer)
+	if err != nil && strings.ToLower(URL.Scheme) == "https" {
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+	p := url.Values{}
+	p.Set("source", source)
+	req, err := http.NewRequest(
+		"GET",
+		strings.TrimRight(AmrConvertServer, "/")+"/api/decoder?"+p.Encode(),
+		nil,
+	)
+	if err != nil {
+		return ReturnError(ctx, "100029", err)
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return ReturnError(ctx, "100030", err)
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ReturnError(ctx, "100031", err)
+	}
+	var rst map[string]interface{}
+	err = json.Unmarshal(b, &rst)
+	if err != nil {
+		return ReturnError(ctx, "100032", err)
+	}
+	if status, ok := rst["status"]; ok {
+		if strings.ToLower(goutils.ToString(status)) == "success" {
+			var data []interface{}
+			b, _ := json.Marshal(rst["data"])
+			err := json.Unmarshal(b, &data)
+			if err != nil {
+				return ReturnError(ctx, "100035", fmt.Errorf("%v", rst))
+			} else {
+				return ReturnData(ctx, data[0])
+			}
+		} else {
+			return ReturnError(ctx, "100033", fmt.Errorf("%s", rst["message"]))
+		}
+	} else {
+		return ReturnError(ctx, "100034", fmt.Errorf("%v", rst))
+	}
 }
 
 func pageParam(input interface{}, def int) (num int) {

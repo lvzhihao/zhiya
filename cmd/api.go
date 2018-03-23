@@ -67,6 +67,9 @@ var apiCmd = &cobra.Command{
 		apis.DB = db
 		apis.Client = client
 		apis.Tool = tool
+		if viper.GetString("amr_convert_server") != "" {
+			apis.AmrConvertServer = viper.GetString("amr_convert_server")
+		}
 
 		// check api v2 backend token
 		app.Use(CheckBackendToken)
@@ -103,6 +106,7 @@ var apiCmd = &cobra.Command{
 		app.GET("/api/v2/chatroom/templates", apis.GetChatRoomTemplates)
 		app.GET("/api/v2/robot/valid/one", apis.GetValidRobot)
 		app.POST("/api/v2/robot/valid", apis.UpdateRobotExpireTime)
+		app.GET("/api/v2/amr/convert", apis.AmrConver)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},
