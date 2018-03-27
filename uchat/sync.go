@@ -484,6 +484,18 @@ func FetchChatRoomMemberJoinMessageTemplate(db *gorm.DB, chatRoomSerialNo string
 */
 func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db, managerDB *gorm.DB) error {
 	log.Println("commit start")
+	sendInterval := DefaultMemberJoinSendInterval
+	if msg == "" {
+		if UseWorkTemplate == true {
+			msg, sendInterval = FetchChatRoomMemberJoinMessageTemplate(db, charRoomSerialNo)
+		} else {
+			msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
+		}
+	}
+	if msg == "" {
+		return errors.New("no join content")
+	}
+	log.Println("commit start")
 	message := &models.MessageQueue{}
 	tx := db.Begin()
 	err := tx.Where("chat_room_serial_no_list = ?", charRoomSerialNo).Where("send_type = 10").Where("send_status = 0").First(&message).Error
@@ -495,19 +507,7 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db,
 		}
 	} else {
 		log.Println("create join message")
-		sendInterval := DefaultMemberJoinSendInterval
 		//new message
-		if msg == "" {
-			if UseWorkTemplate == true {
-				msg, sendInterval = FetchChatRoomMemberJoinMessageTemplate(db, charRoomSerialNo)
-			} else {
-				msg = FetchChatRoomMemberJoinMessage(charRoomSerialNo, db)
-			}
-		}
-		if msg == "" {
-			tx.Rollback()
-			return errors.New("no content")
-		}
 		message.ChatRoomSerialNoList = charRoomSerialNo
 		message.ChatRoomCount = 1
 		message.MsgType = "2001"
