@@ -476,7 +476,7 @@ func FetchChatRoomMemberJoinMessageTemplate(db *gorm.DB, chatRoomSerialNo string
 			interval = time.Duration(goutils.ToInt32(iter)) * time.Second
 		}
 	}
-	return template.CmdReply, interval
+	return strings.TrimSpace(template.CmdReply), interval
 }
 
 /*
@@ -490,7 +490,9 @@ func SendChatRoomMemberTextMessage(charRoomSerialNo, wxSerialNo, msg string, db,
 	if err == nil {
 		log.Println("update join message")
 		//update
-		message.WeixinSerialNo = message.WeixinSerialNo + "," + wxSerialNo //添加@新成员
+		if strings.Contains(msg, "@新成员名称") {
+			message.WeixinSerialNo = message.WeixinSerialNo + "," + wxSerialNo //添加@新成员
+		}
 	} else {
 		log.Println("create join message")
 		sendInterval := DefaultMemberJoinSendInterval
