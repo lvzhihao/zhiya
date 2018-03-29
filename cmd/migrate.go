@@ -56,6 +56,10 @@ var InitCmdTypeValues = `
 		{
 			"type_flag": "shop.custom.keyword.reply",
 			"type_name": "客户自定义关键词回复"
+		},
+		{
+			"type_flag": "shop.intelligent.chatting",
+			"type_name": "客户自动陪聊"
 		}
 	]
 `
