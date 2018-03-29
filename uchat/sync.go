@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/url"
 	"regexp"
 	"strings"
@@ -723,11 +724,69 @@ func FetchTulingResult(key, secret string, context map[string]interface{}, chat_
 	}
 }
 
+type CustomKeywordReplyTemplateParams struct {
+	Keywords  []CustomKeywordReplyTemplateParamsKeyword `json:"keywords"`
+	ReplyType string                                    `json:"reply_type"`
+}
+
+type CustomKeywordReplyTemplateParamsKeyword struct {
+	Filter  string `json:"filter"`
+	Keyword string `json:"keyword"`
+}
+
+/*
+  获取商家自定义关键词回复模板
+*/
+func FetchChatRoomCustomKeywordReplyTemplate(db *gorm.DB, chatRoomSerialNo, msg string) ([]map[string]interface{}, error) {
+	template, err := GetChatRoomValidTemplate(db, chatRoomSerialNo, "shop.custom.keyword.reply")
+	if err != nil {
+		return nil, err
+	}
+	var params CustomKeywordReplyTemplateParams
+	err = json.Unmarshal([]byte(template.CmdParams), &params)
+	if err != nil {
+		return nil, err
+	}
+	msg = strings.TrimSpace(msg)
+	hasRegex := false
+	for _, keyword := range params.Keywords {
+		switch strings.ToLower(keyword.Filter) {
+		case "all":
+			if strings.Compare(msg, keyword.Keyword) == 0 {
+				hasRegex = true
+				break
+			}
+		case "like":
+			if strings.Index(msg, keyword.Keyword) >= 0 {
+				hasRegex = true
+				break
+			}
+		default:
+		}
+	}
+	if hasRegex == true {
+		var data []map[string]interface{}
+		err := json.Unmarshal([]byte(template.CmdReply), &data)
+		if err != nil {
+			return nil, err
+		} else {
+			if strings.ToLower(params.ReplyType) == "all" {
+				return data, nil
+			} else {
+				rnd := rand.Intn(len(data))
+				return []map[string]interface{}{data[rnd]}, nil
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("no regex msg")
+	}
+}
+
 /*
   同步群成员时时消息回调
   支持重复调用
 */
-func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
+func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *utils.ReceiveTool) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -756,23 +815,43 @@ func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB) error {
 		}
 		var robotChatRoom models.RobotChatRoom
 		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
-		if robotChatRoom.MyId != "" { //有绑定供应商
-			err := SendShopCustomSearch(robotChatRoom.MyId, robotChatRoom.SubId, robotChatRoom.ChatRoomSerialNo, content, db)
-			//如果没有自定义配置
+		if UseWorkTemplate == true {
+			data, err := FetchChatRoomCustomKeywordReplyTemplate(db, robotChatRoom.ChatRoomSerialNo, content)
 			if err != nil {
-				//pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
-				domain, err := FetchTuikeasySearchDomain(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+				// 如果没有匹配的运营模板，则忽略，读取下一条数据
+				continue
+			}
+			// 补充商户号和发送流水号
+			rst := make(map[string]interface{}, 0)
+			rst["MerchantNo"] = viper.GetString("merchant_no")
+			rst["vcRelaSerialNo"] = "custom-keyword-reply-" + goutils.RandomString(20)
+			rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
+			rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+			rst["vcWeixinSerialNo"] = ""
+			rst["nIsHit"] = "1"
+			rst["Data"] = data
+			b, _ := json.Marshal(rst)
+			log.Printf("%s\n", b)
+			tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+		} else {
+			if robotChatRoom.MyId != "" { //有绑定供应商
+				err := SendShopCustomSearch(robotChatRoom.MyId, robotChatRoom.SubId, robotChatRoom.ChatRoomSerialNo, content, db)
+				//如果没有自定义配置
 				if err != nil {
-					log.Println(err)
-					continue
-				}
-				//err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
-				err = SendTuikeasyProductSearch(robotChatRoom.MyId, domain, robotChatRoom.ChatRoomSerialNo, content, db)
-				//如果已经匹配关键字则不用再去搜索优惠链接
-				if err != nil {
-					//err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
-					err = SendTuikeasyCouponSearch(robotChatRoom.MyId, domain, robotChatRoom.ChatRoomSerialNo, content, db)
-					log.Println(err)
+					//pid, err := FetchAlimamaSearchPid(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+					domain, err := FetchTuikeasySearchDomain(robotChatRoom.MyId, robotChatRoom.SubId, managerDB)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					//err = SendAlimamProductSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+					err = SendTuikeasyProductSearch(robotChatRoom.MyId, domain, robotChatRoom.ChatRoomSerialNo, content, db)
+					//如果已经匹配关键字则不用再去搜索优惠链接
+					if err != nil {
+						//err = SendAlimamCouponSearch(robotChatRoom.MyId, pid, robotChatRoom.ChatRoomSerialNo, content, db)
+						err = SendTuikeasyCouponSearch(robotChatRoom.MyId, domain, robotChatRoom.ChatRoomSerialNo, content, db)
+						log.Println(err)
+					}
 				}
 			}
 		}

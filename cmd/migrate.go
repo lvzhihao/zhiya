@@ -52,6 +52,10 @@ var InitCmdTypeValues = `
 		{
 			"type_flag": "shop.custom.search",
 			"type_name": "客户自定义搜索"
+		},
+		{
+			"type_flag": "shop.custom.keyword.reply",
+			"type_name": "客户自定义关键词回复"
 		}
 	]
 `

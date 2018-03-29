@@ -208,7 +208,7 @@ func (c *consumerShell) SendMessage(msg amqp.Delivery) {
 }
 
 func (c *consumerShell) ChatMessage(msg amqp.Delivery) {
-	err := uchat.SyncChatMessageCallback(msg.Body, c.db, c.managerDB)
+	err := uchat.SyncChatMessageCallback(msg.Body, c.db, c.managerDB, c.sendTool)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.chat.message"), zap.Error(err), zap.Any("msg", msg))
 		msg.Ack(false)

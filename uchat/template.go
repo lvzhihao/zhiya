@@ -86,9 +86,9 @@ func UpdateWorkTemplate(db *gorm.DB, workTemplateId, name string, cmdValue, cmdP
 func ListWorkTemplate(db *gorm.DB, myId, subId, cmdType string) (list *[]models.WorkTemplate, err error) {
 	list = &[]models.WorkTemplate{}
 	if cmdType == "" {
-		err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Find(list).Error
+		err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Order("created_at DESC").Find(list).Error
 	} else {
-		err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("cmd_type = ?", cmdType).Where("status IN (?)", []int8{0, 1}).Find(list).Error
+		err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("cmd_type = ?", cmdType).Where("status IN (?)", []int8{0, 1}).Order("created_at DESC").Find(list).Error
 	}
 	return
 }
