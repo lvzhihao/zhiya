@@ -737,7 +737,10 @@ type CustomKeywordReplyTemplateParamsKeyword struct {
 /*
   获取商家自定义关键词回复模板
 */
-func FetchChatRoomCustomKeywordReplyTemplate(db *gorm.DB, chatRoomSerialNo, msg string) ([]map[string]interface{}, error) {
+func FetchChatRoomCustomKeywordReplyTemplate(db *gorm.DB, chatRoomSerialNo, msg string, org map[string]interface{}) ([]map[string]interface{}, error) {
+	if goutils.ToString(org["nPlatformMsgType"]) == "12" {
+		return nil, fmt.Errorf("robot message don't reply")
+	}
 	template, err := GetChatRoomValidTemplate(db, chatRoomSerialNo, "shop.custom.keyword.reply")
 	if err != nil {
 		return nil, err
@@ -816,7 +819,7 @@ func SyncChatMessageCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 		var robotChatRoom models.RobotChatRoom
 		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
 		if UseWorkTemplate == true {
-			data, err := FetchChatRoomCustomKeywordReplyTemplate(db, robotChatRoom.ChatRoomSerialNo, content)
+			data, err := FetchChatRoomCustomKeywordReplyTemplate(db, robotChatRoom.ChatRoomSerialNo, content, v)
 			if err != nil {
 				// 如果没有匹配的运营模板，则忽略，读取下一条数据
 				continue
