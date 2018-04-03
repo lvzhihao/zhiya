@@ -15,6 +15,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
+	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/shorten"
 	"github.com/lvzhihao/zhiya/tuling"
@@ -579,7 +580,43 @@ func FetchChatRoomMemberJoinMessage(charRoomSerialNo string, db *gorm.DB) string
 	return ""
 }
 
-func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *utils.ReceiveTool) error {
+func FetchChatRoomIntelligentChatTemplate(db *gorm.DB, chatRoomSerialNo string, msgDate time.Time) (*models.WorkTemplate, error) {
+	template, err := GetChatRoomValidTemplate(db, chatRoomSerialNo, "shop.intelligent.chatting")
+	if err != nil {
+		return nil, err
+	}
+	var params map[string]interface{}
+	err = json.Unmarshal([]byte(template.CmdParams), &params)
+	if err != nil {
+		return nil, err
+	}
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	startTime, err := time.ParseInLocation("2006-01-02 15:04:05", time.Now().Format("2006-01-02 ")+goutils.ToString(params["start_time"]), loc)
+	if err != nil {
+		return nil, err
+	}
+	endTime, err := time.ParseInLocation("2006-01-02 15:04:05", time.Now().Format("2006-01-02 ")+goutils.ToString(params["end_time"]), loc)
+	if err != nil {
+		return nil, err
+	}
+	// 如果结束时间为第二天的，则规则是大于当天起始时间或小于当天结束时间
+	if int64(endTime.Sub(startTime)/time.Second) < 0 {
+		if int64(msgDate.Sub(startTime)/time.Second) > 0 || int64(msgDate.Sub(endTime)/time.Second) < 0 {
+			// run
+		} else {
+			return nil, fmt.Errorf("time closed")
+		}
+	} else {
+		if int64(msgDate.Sub(startTime)/time.Second) > 0 && int64(msgDate.Sub(endTime)/time.Second) < 0 {
+			// run
+		} else {
+			return nil, fmt.Errorf("time closed")
+		}
+	}
+	return template, nil
+}
+
+func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *utils.ReceiveTool, chatBotClient *chatbot.Client) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -596,29 +633,68 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 	}
 	for _, v := range list {
 		var robotChatRoom models.RobotChatRoom
-		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Where("open_tuling = ?", 1).Order("id desc").First(&robotChatRoom)
+		db.Where("chat_room_serial_no = ?", goutils.ToString(v["vcChatRoomSerialNo"])).Where("is_open = ?", 1).Order("id desc").First(&robotChatRoom)
 		//对像是该群机器人
 		if robotChatRoom.ID > 0 && strings.Compare(robotChatRoom.RobotSerialNo, goutils.ToString(v["vcToWxUserSerialNo"])) == 0 {
-			var tulingConfig models.TulingConfig
-			db.Where("uchat_robot_serial_no = ?", robotChatRoom.RobotSerialNo).Where("is_open = ?", 1).First(&tulingConfig)
-			if tulingConfig.ApiKey != "" {
-				data, err := FetchTulingResult(tulingConfig.ApiKey, tulingConfig.ApiSecret, map[string]interface{}{
-					"info":   goutils.ToString(v["vcContent"]),
-					"userid": goutils.ToString(v["vcFromWxUserSerialNo"]),
-				}, robotChatRoom.ChatRoomSerialNo, db, managerDB)
+			if UseWorkTemplate == true {
+				// 目前关键词接口还没有返回时间
+				/*
+					loc, _ := time.LoadLocation("Asia/Shanghai")
+					msgDate, err := time.ParseInLocation("2006-01-02T15:04:05", goutils.ToString(v["dtMsgTime"]), loc)
+					if err != nil {
+						continue
+					}
+				*/
+				//template, err := FetchChatRoomIntelligentChatTemplate(db, robotChatRoom.ChatRoomSerialNo, msgDate)
+				template, err := FetchChatRoomIntelligentChatTemplate(db, robotChatRoom.ChatRoomSerialNo, time.Now())
+				log.Fatal(template, err)
+				if err != nil {
+					// 如果没有匹配的运营模板，则忽略，读取下一条数据
+					continue
+				}
+				data, err := chatBotClient.SendMessage(template.WorkTemplateId, "tuling", goutils.ToString(v["vcContent"]), robotChatRoom.ChatRoomSerialNo+"-"+goutils.ToString(v["vcFromWxUserSerialNo"]))
+				log.Fatal(data, err)
 				if err != nil {
 					log.Println(err)
 				} else {
-					rst := make(map[string]interface{}, 0)
-					rst["MerchantNo"] = viper.GetString("merchant_no")
-					rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
-					rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
-					rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
-					rst["nIsHit"] = "1"
-					rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
-					rst["Data"] = data
-					b, _ := json.Marshal(rst)
-					tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+					switch data.Code {
+					case 1000:
+						// 文字
+						rst := make(map[string]interface{}, 0)
+						rst["MerchantNo"] = viper.GetString("merchant_no")
+						rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
+						rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
+						rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+						rst["nIsHit"] = "1"
+						rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
+						rst["Data"] = data.Text
+						b, _ := json.Marshal(rst)
+						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+					}
+				}
+			} else {
+				// old 规则
+				var tulingConfig models.TulingConfig
+				db.Where("uchat_robot_serial_no = ?", robotChatRoom.RobotSerialNo).Where("is_open = ?", 1).First(&tulingConfig)
+				if tulingConfig.ApiKey != "" {
+					data, err := FetchTulingResult(tulingConfig.ApiKey, tulingConfig.ApiSecret, map[string]interface{}{
+						"info":   goutils.ToString(v["vcContent"]),
+						"userid": goutils.ToString(v["vcFromWxUserSerialNo"]),
+					}, robotChatRoom.ChatRoomSerialNo, db, managerDB)
+					if err != nil {
+						log.Println(err)
+					} else {
+						rst := make(map[string]interface{}, 0)
+						rst["MerchantNo"] = viper.GetString("merchant_no")
+						rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
+						rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
+						rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+						rst["nIsHit"] = "1"
+						rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
+						rst["Data"] = data
+						b, _ := json.Marshal(rst)
+						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+					}
 				}
 			}
 		}

@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
+	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/uchat"
 )
@@ -28,6 +29,7 @@ var (
 		"100007": "robot_serial_no is empty",
 	}
 	AmrConvertServer string = "http://127.0.0.1:8299"
+	ChatBotClient    *chatbot.Client
 )
 
 type ReturnType struct {
@@ -220,6 +222,18 @@ func UpdateRobotInfo(ctx echo.Context) error {
 	}
 }
 
+func EnusreWorkTemplateRule(work *models.WorkTemplate) {
+	// default tuling
+	switch work.CmdType {
+	case "shop.intelligent.chatting":
+		rst, err := ChatBotClient.ApplyRule(work.WorkTemplateId, "tuling")
+		if err != nil {
+			log.Println("EnusreChatbotRule Error:", err)
+		}
+		log.Println(rst)
+	}
+}
+
 func CreateWorkTemplate(ctx echo.Context) error {
 	myId := ctx.FormValue("my_id")
 	subId := ctx.FormValue("sub_id")
@@ -228,10 +242,17 @@ func CreateWorkTemplate(ctx echo.Context) error {
 	cmdValue := ctx.FormValue("cmd_value")
 	cmdParams := ctx.FormValue("cmd_params")
 	cmdReply := ctx.FormValue("cmd_reply")
-	ret, err := uchat.CreateWorkTemplate(DB, myId, subId, name, cmdType, cmdValue, cmdParams, cmdReply)
+	var status int32
+	if ctx.FormValue("status") != "" {
+		status = goutils.ToInt32(ctx.FormValue("status"))
+	} else {
+		status = 0 //不修改
+	}
+	ret, err := uchat.CreateWorkTemplate(DB, myId, subId, name, cmdType, cmdValue, cmdParams, cmdReply, int8(status))
 	if err != nil {
 		return ReturnError(ctx, "100013", err)
 	} else {
+		EnusreWorkTemplateRule(ret)
 		return ReturnData(ctx, ret)
 	}
 }
@@ -252,6 +273,7 @@ func UpdateWorkTemplate(ctx echo.Context) error {
 	if err != nil {
 		return ReturnError(ctx, "100014", err)
 	} else {
+		EnusreWorkTemplateRule(ret)
 		return ReturnData(ctx, ret)
 	}
 }

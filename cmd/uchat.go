@@ -28,6 +28,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lvzhihao/uchatlib"
+	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
@@ -92,10 +93,11 @@ var uchatCmd = &cobra.Command{
 }
 
 type consumerShell struct {
-	db        *gorm.DB
-	managerDB *gorm.DB
-	client    *uchatlib.UchatClient
-	sendTool  *utils.ReceiveTool
+	db            *gorm.DB
+	managerDB     *gorm.DB
+	client        *uchatlib.UchatClient
+	sendTool      *utils.ReceiveTool
+	chatBotClient *chatbot.Client
 }
 
 func (c *consumerShell) Init() (err error) {
@@ -110,6 +112,11 @@ func (c *consumerShell) Init() (err error) {
 		viper.GetString("rabbitmq_message_exchange_name"),
 		[]string{"uchat.mysql.message.queue"},
 	)
+	c.chatBotClient = chatbot.NewClient(&chatbot.ClientConfig{
+		ApiHost:        viper.GetString("chatbot_api_host"),
+		MerchantNo:     viper.GetString("chatbot_merchant_no"),
+		MerchantSecret: viper.GetString("chatbot_merchant_secret"),
+	})
 	return
 }
 
@@ -219,7 +226,7 @@ func (c *consumerShell) ChatMessage(msg amqp.Delivery) {
 }
 
 func (c *consumerShell) ChatKeyword(msg amqp.Delivery) {
-	err := uchat.SyncChatKeywordCallback(msg.Body, c.db, c.managerDB, c.sendTool)
+	err := uchat.SyncChatKeywordCallback(msg.Body, c.db, c.managerDB, c.sendTool, c.chatBotClient)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.chat.keyword"), zap.Error(err), zap.Any("msg", msg))
 		msg.Ack(false)

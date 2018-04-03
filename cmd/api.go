@@ -30,6 +30,7 @@ import (
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/apis"
+	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -70,6 +71,13 @@ var apiCmd = &cobra.Command{
 		if viper.GetString("amr_convert_server") != "" {
 			apis.AmrConvertServer = viper.GetString("amr_convert_server")
 		}
+
+		// chatbot
+		apis.ChatBotClient = chatbot.NewClient(&chatbot.ClientConfig{
+			ApiHost:        viper.GetString("chatbot_api_host"),
+			MerchantNo:     viper.GetString("chatbot_merchant_no"),
+			MerchantSecret: viper.GetString("chatbot_merchant_secret"),
+		})
 
 		// check api v2 backend token
 		app.Use(CheckBackendToken)
