@@ -647,13 +647,12 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 				*/
 				//template, err := FetchChatRoomIntelligentChatTemplate(db, robotChatRoom.ChatRoomSerialNo, msgDate)
 				template, err := FetchChatRoomIntelligentChatTemplate(db, robotChatRoom.ChatRoomSerialNo, time.Now())
-				log.Fatal(template, err)
 				if err != nil {
 					// 如果没有匹配的运营模板，则忽略，读取下一条数据
 					continue
 				}
 				data, err := chatBotClient.SendMessage(template.WorkTemplateId, "tuling", goutils.ToString(v["vcContent"]), robotChatRoom.ChatRoomSerialNo+"-"+goutils.ToString(v["vcFromWxUserSerialNo"]))
-				log.Fatal(data, err)
+				//log.Fatal(data, err)
 				if err != nil {
 					log.Println(err)
 				} else {
@@ -662,12 +661,21 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 						// 文字
 						rst := make(map[string]interface{}, 0)
 						rst["MerchantNo"] = viper.GetString("merchant_no")
-						rst["vcRelaSerialNo"] = "tuling-" + goutils.RandomString(20)
+						rst["vcRelaSerialNo"] = "chatbot-" + goutils.RandomString(20)
 						rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
 						rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
 						rst["nIsHit"] = "1"
 						rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
-						rst["Data"] = data.Text
+						rst["Data"] = []map[string]string{
+							map[string]string{
+								"nMsgType":   "2001",
+								"msgContent": data.Text,
+								"vcTitle":    "",
+								"vcDesc":     "",
+								"nVoiceTime": "0",
+								"vcHref":     "",
+							},
+						}
 						b, _ := json.Marshal(rst)
 						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
 					}
