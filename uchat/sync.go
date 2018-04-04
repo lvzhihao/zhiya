@@ -678,6 +678,27 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 						}
 						b, _ := json.Marshal(rst)
 						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
+					case 10100:
+						// 文字+地址
+						rst := make(map[string]interface{}, 0)
+						rst["MerchantNo"] = viper.GetString("merchant_no")
+						rst["vcRelaSerialNo"] = "chatbot-" + goutils.RandomString(20)
+						rst["vcChatRoomSerialNo"] = robotChatRoom.ChatRoomSerialNo
+						rst["vcRobotSerialNo"] = robotChatRoom.RobotSerialNo
+						rst["nIsHit"] = "1"
+						rst["vcWeixinSerialNo"] = goutils.ToString(v["vcFromWxUserSerialNo"])
+						rst["Data"] = []map[string]string{
+							map[string]string{
+								"nMsgType":   "2001",
+								"msgContent": data.Text + " " + ShortUrl(data.Url),
+								"vcTitle":    "",
+								"vcDesc":     "",
+								"nVoiceTime": "0",
+								"vcHref":     "",
+							},
+						}
+						b, _ := json.Marshal(rst)
+						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
 					}
 				}
 			} else {
