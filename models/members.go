@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -24,6 +25,16 @@ type ChatRoomMember struct {
 	JoinDate             time.Time `json:"join_date"`                                                 //入群时间
 	QuitDate             time.Time `json:"quit_date"`                                                 //退群时间
 	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`                      //是否活跃
+}
+
+/*
+ */
+func FindChatRoomMember(db *gorm.DB, chatRoomSerialNo, wxUserSerialNo string) (member *ChatRoomMember, err error) {
+	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).Where("wx_user_serial_no = ?", wxUserSerialNo).First(&member).Error
+	if member.ID == 0 {
+		err = errors.New("no found")
+	}
+	return
 }
 
 /*
