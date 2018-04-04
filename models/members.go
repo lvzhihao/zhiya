@@ -28,8 +28,9 @@ type ChatRoomMember struct {
 }
 
 /*
- */
-func FindChatRoomMember(db *gorm.DB, chatRoomSerialNo, wxUserSerialNo string) (member *ChatRoomMember, err error) {
+ 获取成员信息
+*/
+func FindChatRoomMember(db *gorm.DB, chatRoomSerialNo, wxUserSerialNo string) (member ChatRoomMember, err error) {
 	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).Where("wx_user_serial_no = ?", wxUserSerialNo).First(&member).Error
 	if member.ID == 0 {
 		err = errors.New("no found")
