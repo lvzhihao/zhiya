@@ -53,6 +53,17 @@ func (c *ChatRoom) ApplyMemberCount(db *gorm.DB) int32 {
 	return count
 }
 
+/*
+  按群编号查找已开通的设备开群记录
+*/
+func FindChatRoom(db *gorm.DB, chatRoomSerialNo string) (chatRoom ChatRoom, err error) {
+	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&chatRoom).Error
+	if robotChatRoom.ID == 0 {
+		err = errors.New("no found")
+	}
+	return
+}
+
 func ApplyChatRoomMemberCount(db *gorm.DB, chatRoomSerialNo string) (int32, error) {
 	var chatRoom ChatRoom
 	err := db.Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&chatRoom).Error
