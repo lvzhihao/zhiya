@@ -58,7 +58,7 @@ func (c *ChatRoom) ApplyMemberCount(db *gorm.DB) int32 {
 */
 func FindChatRoom(db *gorm.DB, chatRoomSerialNo string) (chatRoom ChatRoom, err error) {
 	err = db.Where("chat_room_serial_no = ?", chatRoomSerialNo).First(&chatRoom).Error
-	if robotChatRoom.ID == 0 {
+	if chatRoom.ID == 0 {
 		err = errors.New("no found")
 	}
 	return
