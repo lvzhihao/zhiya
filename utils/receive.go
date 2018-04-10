@@ -22,7 +22,10 @@ func NewTool(url, exchange string, routeKeys []string) (*ReceiveTool, error) {
 }
 
 func (c *ReceiveTool) conn(url, exchange string, routeKeys []string) error {
-	_, err := amqp.Dial(url)
+	testConn, err := amqp.Dial(url)
+	if testConn != nil {
+		go testConn.Close()
+	}
 	if err != nil {
 		return err
 	} //test link
@@ -53,6 +56,9 @@ func (c *receiveChannel) Receive() {
 RetryConnect:
 	conn, err := amqp.Dial(c.amqpUrl)
 	if err != nil {
+		if conn != nil {
+			go conn.Close()
+		}
 		Logger.Error("Channel Connection Error 1", zap.String("route", c.routeKey), zap.Error(err))
 		time.Sleep(3 * time.Second)
 		goto RetryConnect
@@ -60,14 +66,14 @@ RetryConnect:
 	channel, err := conn.Channel()
 	if err != nil {
 		Logger.Error("Channel Connection Error 2", zap.String("route", c.routeKey), zap.Error(err))
-		conn.Close()
+		go conn.Close()
 		time.Sleep(3 * time.Second)
 		goto RetryConnect
 	}
 	err = channel.ExchangeDeclare(c.exchange, "topic", true, false, false, false, nil)
 	if err != nil {
 		Logger.Error("Channel Connection Error 3", zap.String("route", c.routeKey), zap.Error(err))
-		conn.Close()
+		go conn.Close()
 		time.Sleep(3 * time.Second)
 		goto RetryConnect
 	}
@@ -77,7 +83,7 @@ BreakFor:
 		case str := <-c.Channel:
 			if str == "quit" {
 				Logger.Info("Channel Connection Quit", zap.String("route", c.routeKey))
-				conn.Close()
+				go conn.Close()
 				return
 			} //quit
 			msg := amqp.Publishing{
@@ -89,7 +95,7 @@ BreakFor:
 			err := channel.Publish(c.exchange, c.routeKey, false, false, msg)
 			if err != nil {
 				c.Channel <- str
-				conn.Close()
+				go conn.Close()
 				Logger.Error("Channel Connection Error 4", zap.String("route", c.routeKey), zap.Error(err))
 				break BreakFor
 			}

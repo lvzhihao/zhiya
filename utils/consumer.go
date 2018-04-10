@@ -18,7 +18,10 @@ func NewReceiveConsumer(url string) (*receiveConsumer, error) {
 		amqpUrl: url,
 	}
 	// first test dial
-	_, err := amqp.Dial(url)
+	testConn, err := amqp.Dial(url)
+	if testConn != nil {
+		go testConn.Close()
+	}
 	return c, err
 }
 
@@ -26,21 +29,26 @@ func (c *receiveConsumer) link(queue string, prefetchCount int) (<-chan amqp.Del
 	var err error
 	c.conn, err = amqp.Dial(c.amqpUrl)
 	if err != nil {
+		if c.conn != nil {
+			c.conn.Close()
+		}
 		Logger.Error("amqp.open", zap.Error(err))
 		return nil, err
 	}
-	_, err = c.conn.Channel()
+	channel, err := c.conn.Channel()
 	if err != nil {
+		c.conn.Close()
 		Logger.Error("channel.open", zap.Error(err))
 		return nil, err
 	}
-	channel, _ := c.conn.Channel()
 	if err := channel.Qos(prefetchCount, 0, false); err != nil {
+		c.conn.Close()
 		Logger.Error("channel.qos", zap.Error(err))
 		return nil, err
 	}
 	deliveries, err := channel.Consume(queue, "ctag-"+goutils.RandomString(20), false, false, false, false, nil)
 	if err != nil {
+		c.conn.Close()
 		Logger.Error("base.consume", zap.Error(err))
 		return deliveries, err
 	}

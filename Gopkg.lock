@@ -22,7 +22,17 @@
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/hcl"
-  packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token"
+  ]
   revision = "392dba7d905ed5d04a5794ba89f558b27e2ba1ca"
 
 [[projects]]
@@ -33,7 +43,10 @@
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
-  packages = [".","dialects/mysql"]
+  packages = [
+    ".",
+    "dialects/mysql"
+  ]
   revision = "5174cc5c242a728b435ea2be8a2f7f998e15429b"
   version = "v1.0"
 
@@ -45,13 +58,21 @@
 
 [[projects]]
   name = "github.com/labstack/echo"
-  packages = [".","middleware"]
+  packages = [
+    ".",
+    "middleware"
+  ]
   revision = "935a60782cbbc55110e7bd4b33120e4567cbee43"
   version = "v3.2.1"
 
 [[projects]]
   name = "github.com/labstack/gommon"
-  packages = ["bytes","color","log","random"]
+  packages = [
+    "bytes",
+    "color",
+    "log",
+    "random"
+  ]
   revision = "779b8a8b9850a97acba6a3fe20feb628c39e17c1"
   version = "0.2.2"
 
@@ -105,13 +126,21 @@
 
 [[projects]]
   name = "github.com/qiniu/api.v7"
-  packages = ["auth/qbox","storage"]
+  packages = [
+    "auth/qbox",
+    "storage"
+  ]
   revision = "5c2af6a4373998c9553eb3679d86ff2c47d9de0a"
   version = "v7.2.1"
 
 [[projects]]
   name = "github.com/qiniu/x"
-  packages = ["bytes.v7","bytes.v7/seekable","rpc.v7","xlog.v7"]
+  packages = [
+    "bytes.v7",
+    "bytes.v7/seekable",
+    "rpc.v7",
+    "xlog.v7"
+  ]
   revision = "946c4a16076d6d98aeb78619e2bd4012357f7228"
   version = "v7.0.8"
 
@@ -124,7 +153,10 @@
 [[projects]]
   branch = "master"
   name = "github.com/spf13/afero"
-  packages = [".","mem"]
+  packages = [
+    ".",
+    "mem"
+  ]
   revision = "9be650865eab0c12963d8753212f4f9c66cdcf12"
 
 [[projects]]
@@ -161,7 +193,7 @@
   branch = "master"
   name = "github.com/streadway/amqp"
   packages = ["."]
-  revision = "2cbfe40c9341ad63ba23e53013b3ddc7989d801c"
+  revision = "8e4aba63da9fc5571e01c6a45dc809a58cbc5a68"
 
 [[projects]]
   name = "github.com/tylerb/graceful"
@@ -195,14 +227,24 @@
 
 [[projects]]
   name = "go.uber.org/zap"
-  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
+  packages = [
+    ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
+    "zapcore"
+  ]
   revision = "3216c4c73e8ebbafff73c456dd27143f4a7c1f94"
   version = "v1.6.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["acme","acme/autocert"]
+  packages = [
+    "acme",
+    "acme/autocert"
+  ]
   revision = "b176d7def5d71bdd214203491f89843ed217f420"
 
 [[projects]]
@@ -220,7 +262,14 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
+  packages = [
+    "internal/gen",
+    "internal/triegen",
+    "internal/ucd",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm"
+  ]
   revision = "e56139fd9c5bc7244c76116c68e500765bb6db6b"
 
 [[projects]]
@@ -231,7 +280,11 @@
 
 [[projects]]
   name = "qiniupkg.com/x"
-  packages = ["bytes.v7","log.v7","reqid.v7"]
+  packages = [
+    "bytes.v7",
+    "log.v7",
+    "reqid.v7"
+  ]
   revision = "8fdcb89a80ae34e50b752c0dace258eb0256d2d8"
   version = "v7.0.7"
 
