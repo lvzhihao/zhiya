@@ -18,6 +18,7 @@ type Robot struct {
 	HeadImages     string `gorm:"size:500" json:"head_images"`                      //设备头像
 	CodeImages     string `gorm:"size:500" json:"code_images"`                      //设备二维码
 	Status         int32  `gorm:"index:idx_status" json:"status"`                   //设备状态
+	Used           bool   `gorm:"default:true" json:"used"`                         //商户下是否使用此设备
 }
 
 /*

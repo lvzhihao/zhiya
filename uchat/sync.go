@@ -48,6 +48,19 @@ func SyncRobots(client *uchatlib.UchatClient, db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
+	var exists []models.Robot
+	err = db.Where("used = ?", true).Find(&exists).Error
+	ids := make([]string, 0)
+	for _, v := range rst {
+		ids = append(ids, goutils.ToString(v["vcSerialNo"]))
+	}
+	for _, v := range exists {
+		if goutils.InStringSlice(ids, v.SerialNo) == false {
+			// 如果商户下已经无此设备，则变更状态
+			v.Used = false
+			db.Save(&v)
+		}
+	}
 	for _, v := range rst {
 		// ensure robot
 		robot := models.Robot{}
