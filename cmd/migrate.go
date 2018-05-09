@@ -132,6 +132,10 @@ var migrateCmd = &cobra.Command{
 		migrateSql(db.Model(&models.ChatRoomMember{}).AddUniqueIndex("idx_chat_no_member_no", "chat_room_serial_no", "wx_user_serial_no").Error)
 		log.Println("db migrate success")
 
+		// fix ChatRoomWorkTemplate Index
+		migrateSql(db.Model(&models.ChatRoomWorkTemplate{}).RemoveIndex("uix_chat_room_serial_no_cmd_type").Error) // migrate at 2018.05.09
+		log.Println("db fix migrate success")
+
 		// ensure cmd type data
 		var initCmdType []models.CmdType
 		err = json.Unmarshal([]byte(InitCmdTypeValues), &initCmdType)

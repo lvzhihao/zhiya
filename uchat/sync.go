@@ -859,48 +859,49 @@ func FetchChatRoomCustomKeywordReplyTemplate(db *gorm.DB, chatRoomSerialNo, msg 
 	if goutils.ToString(org["nPlatformMsgType"]) == "12" {
 		return nil, fmt.Errorf("robot message don't reply")
 	}
-	template, err := GetChatRoomValidTemplate(db, chatRoomSerialNo, "shop.custom.keyword.reply")
+	templates, err := GetChatRoomValidTemplates(db, chatRoomSerialNo, "shop.custom.keyword.reply")
 	if err != nil {
 		return nil, err
 	}
-	var params CustomKeywordReplyTemplateParams
-	err = json.Unmarshal([]byte(template.CmdParams), &params)
-	if err != nil {
-		return nil, err
-	}
-	msg = strings.TrimSpace(msg)
-	hasRegex := false
-	for _, keyword := range params.Keywords {
-		switch strings.ToLower(keyword.Filter) {
-		case "all":
-			if strings.Compare(msg, keyword.Keyword) == 0 {
-				hasRegex = true
-				break
-			}
-		case "like":
-			if strings.Index(msg, keyword.Keyword) >= 0 {
-				hasRegex = true
-				break
-			}
-		default:
-		}
-	}
-	if hasRegex == true {
-		var data []map[string]interface{}
-		err := json.Unmarshal([]byte(template.CmdReply), &data)
+	for _, template := range templates {
+		var params CustomKeywordReplyTemplateParams
+		err = json.Unmarshal([]byte(template.CmdParams), &params)
 		if err != nil {
-			return nil, err
-		} else {
-			if strings.ToLower(params.ReplyType) == "all" {
-				return data, nil
-			} else {
-				rnd := rand.Intn(len(data))
-				return []map[string]interface{}{data[rnd]}, nil
+			continue
+		}
+		msg = strings.TrimSpace(msg)
+		hasRegex := false
+		for _, keyword := range params.Keywords {
+			switch strings.ToLower(keyword.Filter) {
+			case "all":
+				if strings.Compare(msg, keyword.Keyword) == 0 {
+					hasRegex = true
+					break
+				}
+			case "like":
+				if strings.Index(msg, keyword.Keyword) >= 0 {
+					hasRegex = true
+					break
+				}
+			default:
 			}
 		}
-	} else {
-		return nil, fmt.Errorf("no regex msg")
+		if hasRegex == true {
+			var data []map[string]interface{}
+			err := json.Unmarshal([]byte(template.CmdReply), &data)
+			if err != nil {
+				continue
+			} else {
+				if strings.ToLower(params.ReplyType) == "all" {
+					return data, nil
+				} else {
+					rnd := rand.Intn(len(data))
+					return []map[string]interface{}{data[rnd]}, nil
+				}
+			}
+		}
 	}
+	return nil, fmt.Errorf("no regex msg")
 }
 
 /*

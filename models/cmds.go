@@ -88,7 +88,7 @@ type WorkTemplate struct {
 
 type ChatRoomWorkTemplate struct {
 	gorm.Model
-	ChatRoomSerialNo string `gorm:"size:100;not null;unique_index:uix_chat_room_serial_no_cmd_type" json:"chat_room_serial_no"` //群编号
-	CmdType          string `gorm:"size:50;not null;unique_index:uix_chat_room_serial_no_cmd_type" json:"cmd_type"`             //指令类型
-	WorkTemplateId   string `gorm:"size:100;not null;index" json:"work_template_id"`                                            //指令模板号
+	ChatRoomSerialNo string `gorm:"size:100;not null;index" json:"chat_room_serial_no"` //群编号
+	CmdType          string `gorm:"size:50;not null;index" json:"cmd_type"`             //指令类型
+	WorkTemplateId   string `gorm:"size:100;not null;index" json:"work_template_id"`    //指令模板号
 }
