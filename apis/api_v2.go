@@ -447,6 +447,20 @@ func AmrConver(ctx echo.Context) error {
 	}
 }
 
+func UpdateChatRoomRobotNickName(ctx echo.Context) error {
+	chatRoomSerialNo := ctx.FormValue("chat_room_serial_no")
+	nickName := ctx.FormValue("nick_name")
+	err := Client.ChatRoomRobotNickNameModify(map[string]string{
+		"vcChatRoomSerialNo": chatRoomSerialNo,
+		"vcNickName":         nickName,
+	})
+	if err != nil {
+		return ReturnError(ctx, "100040", err)
+	} else {
+		return ReturnData(ctx, nil)
+	}
+}
+
 func pageParam(input interface{}, def int) (num int) {
 	num = int(goutils.ToInt32(input))
 	if num == 0 {
