@@ -331,6 +331,14 @@ func PyRobotLoginQr(ctx echo.Context) error {
 				"vcHref":     "",
 			},
 			map[string]string{
+				"nMsgType":   "2001",
+				"msgContent": qrUrl,
+				"vcTitle":    "",
+				"vcDesc":     "",
+				"nVoiceTime": "0",
+				"vcHref":     "",
+			},
+			map[string]string{
 				"nMsgType":   "2002",
 				"msgContent": qrUrl,
 				"vcTitle":    "",

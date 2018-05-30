@@ -32,9 +32,14 @@ import (
 	"github.com/lvzhihao/zhiya/apis"
 	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/utils"
+	prism "github.com/shopex/prism-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+)
+
+var (
+	prismSignConfig map[string]string
 )
 
 // apiCmd represents the api command
@@ -71,6 +76,8 @@ var apiCmd = &cobra.Command{
 		if viper.GetString("amr_convert_server") != "" {
 			apis.AmrConvertServer = viper.GetString("amr_convert_server")
 		}
+		// prism sign config
+		prismSignConfig = viper.GetStringMapString("prism_sign_config")
 
 		// chatbot
 		apis.ChatBotClient = chatbot.NewClient(&chatbot.ClientConfig{
@@ -124,8 +131,45 @@ var apiCmd = &cobra.Command{
 func CheckBackendToken(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if strings.Index(c.Path(), "/api/v2") == 0 {
-			if viper.GetString("api_v2_backend_token") == "" || c.QueryParam("backend_token") != viper.GetString("api_v2_backend_token") {
-				return c.NoContent(http.StatusUnauthorized)
+			backend_token := c.QueryParam("backend_token")
+			if backend_token != "" {
+				// 如果走backend_token模式的
+				if viper.GetString("api_v2_backend_token") == "" || strings.Compare(viper.GetString("api_v2_backend_token"), backend_token) != 0 {
+					return c.NoContent(http.StatusUnauthorized)
+				}
+			} else {
+				// prism checkout
+				clientId := ""
+				sign := ""
+				apis.Logger.Debug("api http request", zap.Any("method", c.Request().Method), zap.Any("url", c.Request().URL))
+				switch c.Request().Method {
+				case "GET":
+					clientId = c.QueryParam("client_id")
+					sign = c.QueryParam("sign")
+				case "POST":
+					clientId = c.FormValue("client_id")
+					sign = c.FormValue("sign")
+				case "PUT":
+					clientId = c.FormValue("client_id")
+					sign = c.FormValue("sign")
+				case "DELETE":
+					clientId = c.QueryParam("client_id")
+					sign = c.QueryParam("sign")
+				default:
+					return c.NoContent(http.StatusUnauthorized)
+				}
+				apis.Logger.Debug("api sign params", zap.String("client_id", clientId), zap.String("sign", sign), zap.Any("config", prismSignConfig))
+				secret, ok := prismSignConfig[clientId]
+				if clientId == "" || !ok {
+					apis.Logger.Error("client_id error", zap.String("client_id", clientId), zap.Any("config", prismSignConfig))
+					return c.NoContent(http.StatusUnauthorized)
+				}
+				checkSign := prism.Sign(c.Request(), secret)
+				apis.Logger.Debug("api check sign", zap.String("check_sign", checkSign))
+				if sign == "" || strings.Compare(checkSign, sign) != 0 {
+					apis.Logger.Error("api check error", zap.String("sign", sign), zap.String("check_sign", checkSign))
+					return c.NoContent(http.StatusUnauthorized)
+				}
 			}
 		}
 		return next(c)
