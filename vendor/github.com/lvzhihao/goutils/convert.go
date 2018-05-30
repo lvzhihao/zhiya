@@ -55,6 +55,19 @@ func ToString(v interface{}) (s string) {
 	return
 }
 
+func ToBool(v interface{}) bool {
+	switch v.(type) {
+	case bool:
+		return v.(bool)
+	default:
+		if strings.Compare(strings.ToLower(ToString(v)), "true") == 0 {
+			return true
+		} else {
+			return false
+		}
+	}
+}
+
 func ToInt32(v interface{}) int32 {
 	return int32(ToInt(v))
 }

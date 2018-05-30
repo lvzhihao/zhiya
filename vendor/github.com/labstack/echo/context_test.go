@@ -2,20 +2,17 @@ package echo
 
 import (
 	"bytes"
+	"encoding/xml"
 	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
-
-	"strings"
-
-	"net/url"
-
-	"encoding/xml"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -187,7 +184,7 @@ func TestContext(t *testing.T) {
 	err = c.Attachment("_fixture/images/walle.png", "walle.png")
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "attachment; filename=walle.png", rec.Header().Get(HeaderContentDisposition))
+		assert.Equal(t, "attachment; filename=\"walle.png\"", rec.Header().Get(HeaderContentDisposition))
 		assert.Equal(t, 219885, rec.Body.Len())
 	}
 
@@ -197,7 +194,7 @@ func TestContext(t *testing.T) {
 	err = c.Inline("_fixture/images/walle.png", "walle.png")
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, "inline; filename=walle.png", rec.Header().Get(HeaderContentDisposition))
+		assert.Equal(t, "inline; filename=\"walle.png\"", rec.Header().Get(HeaderContentDisposition))
 		assert.Equal(t, 219885, rec.Body.Len())
 	}
 
@@ -217,7 +214,7 @@ func TestContext(t *testing.T) {
 	c.SetParamNames("foo")
 	c.SetParamValues("bar")
 	c.Set("foe", "ban")
-	c.query = url.Values(map[string][]string{"fon": []string{"baz"}})
+	c.query = url.Values(map[string][]string{"fon": {"baz"}})
 	c.Reset(req, httptest.NewRecorder())
 	assert.Equal(t, 0, len(c.ParamValues()))
 	assert.Equal(t, 0, len(c.ParamNames()))
@@ -301,18 +298,6 @@ func TestContextPathParam(t *testing.T) {
 
 	// Param
 	assert.Equal(t, "501", c.Param("fid"))
-}
-
-func TestContextPathParamNamesAlais(t *testing.T) {
-	e := New()
-	req := httptest.NewRequest(GET, "/", nil)
-	c := e.NewContext(req, nil)
-
-	c.SetParamNames("id,name")
-	c.SetParamValues("joe")
-
-	assert.Equal(t, "joe", c.Param("id"))
-	assert.Equal(t, "joe", c.Param("name"))
 }
 
 func TestContextFormValue(t *testing.T) {

@@ -29,6 +29,7 @@ var bucketManager *BucketManager
 var operationManager *OperationManager
 var formUploader *FormUploader
 var resumeUploader *ResumeUploader
+var base64Uploader *Base64Uploader
 
 func init() {
 	if testAK == "" || testSK == "" {
@@ -37,10 +38,12 @@ func init() {
 	mac = qbox.NewMac(testAK, testSK)
 	cfg := Config{}
 	cfg.Zone = &Zone_z0
+	cfg.UseCdnDomains = true
 	bucketManager = NewBucketManager(mac, &cfg)
 	operationManager = NewOperationManager(mac, &cfg)
 	formUploader = NewFormUploader(&cfg)
 	resumeUploader = NewResumeUploader(&cfg)
+	base64Uploader = NewBase64Uploader(&cfg)
 	rand.Seed(time.Now().Unix())
 }
 
