@@ -692,6 +692,26 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 						b, _ := json.Marshal(rst)
 						tool.Publish("uchat.mysql.message.queue", goutils.ToString(b))
 					case 10100:
+						var regex = regexp.MustCompile(`^亲，已帮你找到(.*)价格信息$`)
+						strs := regex.FindStringSubmatch(data.Text)
+						if len(strs) == 2 {
+							keyword := strs[1]
+							content, err := GenerateTuikeasyProductSearchContentByKeyword(robotChatRoom.ChatRoomSerialNo, keyword, db, managerDB)
+							if err == nil {
+								data.Text = content
+								data.Url = ""
+							}
+						}
+						regex = regexp.MustCompile(`^亲，已找到在(.*)的(.*)价格行情$`)
+						strs = regex.FindStringSubmatch(data.Text)
+						if len(strs) == 3 {
+							keyword := strs[2]
+							content, err := GenerateTuikeasyProductSearchContentByKeyword(robotChatRoom.ChatRoomSerialNo, keyword, db, managerDB)
+							if err == nil {
+								data.Text = content
+								data.Url = ""
+							}
+						}
 						// 文字+地址
 						rst := make(map[string]interface{}, 0)
 						rst["MerchantNo"] = viper.GetString("merchant_no")
@@ -703,7 +723,7 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 						rst["Data"] = []map[string]string{
 							map[string]string{
 								"nMsgType":   "2001",
-								"msgContent": data.Text + " " + ShortUrl(data.Url),
+								"msgContent": strings.TrimSpace(data.Text + " " + ShortUrl(data.Url)),
 								"vcTitle":    "",
 								"vcDesc":     "",
 								"nVoiceTime": "0",
