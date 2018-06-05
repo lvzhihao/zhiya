@@ -700,6 +700,9 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 							if err == nil {
 								data.Text = content
 								data.Url = ""
+							} else {
+								data.Text = "为您找到" + keyword + "的优惠，请点击下面链接挑选哦！\r\n 优惠链接"
+								data.Url = ShortUrl("https://haschen.2mai2.com/list?pid=96253&kwd=" + url.PathEscape(keyword))
 							}
 						}
 						regex = regexp.MustCompile(`^亲，已找到在(.*)的(.*)价格行情$`)
@@ -710,6 +713,9 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 							if err == nil {
 								data.Text = content
 								data.Url = ""
+							} else {
+								data.Text = "为您找到" + keyword + "的优惠，请点击下面链接挑选哦！\r\n 优惠链接"
+								data.Url = ShortUrl("https://haschen.2mai2.com/list?pid=96253&kwd=" + url.PathEscape(keyword))
 							}
 						}
 						// 文字+地址
