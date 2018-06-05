@@ -696,26 +696,36 @@ func SyncChatKeywordCallback(b []byte, db *gorm.DB, managerDB *gorm.DB, tool *ut
 						strs := regex.FindStringSubmatch(data.Text)
 						if len(strs) == 2 {
 							keyword := strs[1]
-							content, err := GenerateTuikeasyProductSearchContentByKeyword(robotChatRoom.ChatRoomSerialNo, keyword, db, managerDB)
-							if err == nil {
-								data.Text = content
-								data.Url = ""
+							if keyword != "" {
+								content, err := GenerateTuikeasyProductSearchContentByKeyword(robotChatRoom.ChatRoomSerialNo, keyword, db, managerDB)
+								if err == nil {
+									data.Text = content
+									data.Url = ""
+								} else {
+									data.Text = "为您找到" + keyword + "的优惠，请点击下面链接挑选哦！\r\n优惠链接"
+									data.Url = "https://haschen.2mai2.com/list?pid=96253&kwd=" + url.PathEscape(keyword)
+								}
 							} else {
-								data.Text = "为您找到" + keyword + "的优惠，请点击下面链接挑选哦！\r\n优惠链接"
-								data.Url = "https://haschen.2mai2.com/list?pid=96253&kwd=" + url.PathEscape(keyword)
+								data.Text = "为您找到的优惠，请点击下面链接挑选哦！\r\n优惠链接"
+								data.Url = "https://haschen.2mai2.com/index?pid=96253"
 							}
 						}
 						regex = regexp.MustCompile(`^亲，已找到在(.*)的(.*)价格行情$`)
 						strs = regex.FindStringSubmatch(data.Text)
 						if len(strs) == 3 {
 							keyword := strs[2]
-							content, err := GenerateTuikeasyProductSearchContentByKeyword(robotChatRoom.ChatRoomSerialNo, keyword, db, managerDB)
-							if err == nil {
-								data.Text = content
-								data.Url = ""
+							if keyword != "" {
+								content, err := GenerateTuikeasyProductSearchContentByKeyword(robotChatRoom.ChatRoomSerialNo, keyword, db, managerDB)
+								if err == nil {
+									data.Text = content
+									data.Url = ""
+								} else {
+									data.Text = "为您找到" + keyword + "的优惠，请点击下面链接挑选哦！\r\n优惠链接"
+									data.Url = "https://haschen.2mai2.com/list?pid=96253&kwd=" + url.PathEscape(keyword)
+								}
 							} else {
-								data.Text = "为您找到" + keyword + "的优惠，请点击下面链接挑选哦！\r\n优惠链接"
-								data.Url = "https://haschen.2mai2.com/list?pid=96253&kwd=" + url.PathEscape(keyword)
+								data.Text = "为您找到的优惠，请点击下面链接挑选哦！\r\n优惠链接"
+								data.Url = "https://haschen.2mai2.com/index?pid=96253"
 							}
 						}
 						// 文字+地址
