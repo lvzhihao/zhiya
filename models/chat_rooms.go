@@ -76,7 +76,7 @@ func ApplyChatRoomMemberCount(db *gorm.DB, chatRoomSerialNo string) (int32, erro
 // 设备开群记录
 type RobotChatRoom struct {
 	gorm.Model
-	ExpiredDate      time.Time `json:"expired_date"`                                          //失效时间
+	ExpiredDate      time.Time `json:"expired_date"`                                          //失效时间, 微选社群增加的，暂时还没有实际用处，todo
 	RobotSerialNo    string    `gorm:"size:100" json:"robot_serial_no"`                       //设备号
 	ChatRoomSerialNo string    `gorm:"size:100" json:"chat_room_serial_no"`                   //群编号
 	IsOpen           bool      `gorm:"index:idx_is_open" json:"is_open"`                      //是否开启
