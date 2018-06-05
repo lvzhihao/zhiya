@@ -3,7 +3,6 @@ package uchat
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	rmqtool "github.com/lvzhihao/go-rmqtool"
@@ -47,7 +46,5 @@ func EventChatRoomCreate(v *models.RobotChatRoom, publisher *rmqtool.PublisherTo
 			Body:         b,
 		})
 	}
-	time.Sleep(3 * time.Second)
-	log.Fatal(string(b))
 	return err
 }

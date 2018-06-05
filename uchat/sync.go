@@ -386,7 +386,7 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 			return err
 		}
 		// publisher chat room create
-		EventChatRoomCreate(&robotRoom, publisher)
+		go EventChatRoomCreate(&robotRoom, publisher)
 		// sync member info
 		go SyncChatRoomMembers(chatRoomSerialNo, client)
 		// sync chat qr code
