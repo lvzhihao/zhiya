@@ -79,6 +79,7 @@ type RobotChatRoom struct {
 	ExpiredDate      time.Time `json:"expired_date"`                                          //失效时间, 微选社群增加的，暂时还没有实际用处，todo
 	RobotSerialNo    string    `gorm:"size:100" json:"robot_serial_no"`                       //设备号
 	ChatRoomSerialNo string    `gorm:"size:100" json:"chat_room_serial_no"`                   //群编号
+	WxUserSerialNo   string    `gorm:"size:100" json:"wx_user_serial_no"`                     //开群用户号
 	IsOpen           bool      `gorm:"index:idx_is_open" json:"is_open"`                      //是否开启
 	MyId             string    `gorm:"size:100;index:idx_my_id" json:"my_id"`                 //供应商ID
 	SubId            string    `gorm:"size:100;index:idx_sub_id" json:"sub_id"`               //代理商ID

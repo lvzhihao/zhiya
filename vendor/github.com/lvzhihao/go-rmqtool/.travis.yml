@@ -1,0 +1,17 @@
+language: go
+go:
+  - 1.8.x
+  - 1.9.x
+  - 1.10.x
+sudo: required
+dist: trusty
+group: deprecated-2017Q4
+services:
+  - docker
+before_install:
+- docker pull rabbitmq
+- docker run -d --rm --hostname test-rabbit --name gormqtool-test-rabbit -p 127.0.0.1:16672:15672 -p 127.0.0.1:6672:5672 rabbitmq:3-management
+- docker ps -a
+- go get -u github.com/streadway/amqp
+script:
+- sleep 30 && make test

@@ -388,10 +388,6 @@ func UpdateRobotExpireTime(ctx echo.Context) error {
 	return ReturnData(ctx, "success")
 }
 
-func UpdateRobotChatRoomExpiredTime(ctx echo.Context) error {
-
-}
-
 func AmrConver(ctx echo.Context) error {
 	params := ctx.QueryParams()
 	source := params.Get("source")

@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/jinzhu/gorm"
+	rmqtool "github.com/lvzhihao/go-rmqtool"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/uchat"
@@ -98,11 +99,18 @@ type consumerShell struct {
 	client        *uchatlib.UchatClient
 	sendTool      *utils.ReceiveTool
 	chatBotClient *chatbot.Client
+	publisher     *rmqtool.PublisherTool
 }
 
 func (c *consumerShell) Init() (err error) {
 	c.db, err = gorm.Open("mysql", viper.GetString("mysql_dns"))
+	if err != nil {
+		return
+	}
 	c.managerDB, err = gorm.Open("mysql", viper.GetString("manager_mysql_dns"))
+	if err != nil {
+		return
+	}
 	c.client = uchatlib.NewClient(viper.GetString("merchant_no"), viper.GetString("merchant_secret"))
 	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 		return viper.GetString("table_prefix") + "_" + defaultTableName
@@ -112,11 +120,32 @@ func (c *consumerShell) Init() (err error) {
 		viper.GetString("rabbitmq_message_exchange_name"),
 		[]string{"uchat.mysql.message.queue"},
 	)
+	if err != nil {
+		return
+	}
 	c.chatBotClient = chatbot.NewClient(&chatbot.ClientConfig{
 		ApiHost:        viper.GetString("chatbot_api_host"),
 		MerchantNo:     viper.GetString("chatbot_merchant_no"),
 		MerchantSecret: viper.GetString("chatbot_merchant_secret"),
 	})
+	newConn := rmqtool.NewConnect(rmqtool.ConnectConfig{
+		Host:     viper.GetString("rabbitmq_host"),
+		Api:      viper.GetString("rabbitmq_api"),
+		User:     viper.GetString("rabbitmq_user"),
+		Passwd:   viper.GetString("rabbitmq_passwd"),
+		Vhost:    viper.GetString("rabbitmq_vhost"),
+		MetaData: nil,
+	})
+	err = newConn.QuickCreateExchange(viper.GetString("rabbitmq_event_exchange_name"), "topic", true)
+	if err != nil {
+		return
+	}
+	c.publisher, err = newConn.ApplyPublisher(viper.GetString("rabbitmq_event_exchange_name"), []string{
+		"event",
+	})
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -161,7 +190,7 @@ func (c *consumerShell) MemberMessageSum(msg amqp.Delivery) {
 }
 
 func (c *consumerShell) ChatRoomCreate(msg amqp.Delivery) {
-	err := uchat.SyncChatRoomCreateCallback(msg.Body, c.client, c.db)
+	err := uchat.SyncChatRoomCreateCallback(msg.Body, c.client, c.db, c.publisher)
 	if err != nil {
 		Logger.Error("process error", zap.String("queue", "uchat.chat.create"), zap.Error(err), zap.Any("msg", msg))
 		//msg.Nack(false, true)

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	rmqtool "github.com/lvzhihao/go-rmqtool"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/chatbot"
@@ -323,7 +324,7 @@ func SyncMemberMessageSumCallback(b []byte, db *gorm.DB) error {
   同步开群通知回调
   支持重复调用
 */
-func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm.DB) error {
+func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm.DB, publisher *rmqtool.PublisherTool) error {
 	var rst map[string]interface{}
 	err := json.Unmarshal(b, &rst)
 	if err != nil {
@@ -376,6 +377,7 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 			}
 			//log.Fatal(robotJoin, err)
 		}
+		robotRoom.WxUserSerialNo = goutils.ToString(v["vcWxUserSerialNo"])
 		robotRoom.IsOpen = true
 		// 默认试用期
 		robotRoom.ExpiredDate = time.Now().Add(7 * 24 * time.Hour)
@@ -383,11 +385,13 @@ func SyncChatRoomCreateCallback(b []byte, client *uchatlib.UchatClient, db *gorm
 		if err != nil {
 			return err
 		}
+		// publisher chat room create
+		EventChatRoomCreate(&robotRoom, publisher)
 		// sync member info
-		SyncChatRoomMembers(chatRoomSerialNo, client)
+		go SyncChatRoomMembers(chatRoomSerialNo, client)
 		// sync chat qr code
-		uchatlib.ApplyChatRoomQrCode(chatRoomSerialNo, client)
-		// open get message
+		go uchatlib.ApplyChatRoomQrCode(chatRoomSerialNo, client)
+		// open get message ， 确保成功，同步执行
 		log.Println(uchatlib.SetChatRoomOpenGetMessage(chatRoomSerialNo, client))
 	}
 	return nil
