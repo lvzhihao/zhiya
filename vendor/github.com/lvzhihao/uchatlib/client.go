@@ -387,3 +387,11 @@ func (c *UchatClient) SendMessage(ctx map[string]interface{}) error {
 	_, err := c.Action("MerchantSendMessages", ctx)
 	return err
 }
+
+/*
+ * 私聊接口
+ */
+func (c *UchatClient) SendPrivateChatMessages(ctx map[string]interface{}) error {
+	_, err := c.Action("SendPrivateChatMessages", ctx)
+	return err
+}

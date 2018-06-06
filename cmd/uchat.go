@@ -23,6 +23,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"go.uber.org/zap"
 
@@ -74,7 +75,8 @@ var uchatCmd = &cobra.Command{
 		case "uchat.member.join":
 			consumer.Consumer("uchat.member.join", 20, shell.MemberJoin)
 		case "uchat.mysql.message.queue":
-			consumer.Consumer("uchat.mysql.message.queue", 20, shell.SendMessage)
+			//consumer.Consumer("uchat.mysql.message.queue", 20, shell.SendMessage)
+			shell.SendChatMessage(queue) //
 		case "uchat.chat.message":
 			consumer.Consumer("uchat.chat.message", 20, shell.ChatMessage)
 		case "uchat.chat.keyword":
@@ -99,6 +101,7 @@ type consumerShell struct {
 	client        *uchatlib.UchatClient
 	sendTool      *utils.ReceiveTool
 	chatBotClient *chatbot.Client
+	conn          *rmqtool.Connect
 	publisher     *rmqtool.PublisherTool
 }
 
@@ -128,7 +131,7 @@ func (c *consumerShell) Init() (err error) {
 		MerchantNo:     viper.GetString("chatbot_merchant_no"),
 		MerchantSecret: viper.GetString("chatbot_merchant_secret"),
 	})
-	newConn := rmqtool.NewConnect(rmqtool.ConnectConfig{
+	c.conn = rmqtool.NewConnect(rmqtool.ConnectConfig{
 		Host:     viper.GetString("rabbitmq_host"),
 		Api:      viper.GetString("rabbitmq_api"),
 		User:     viper.GetString("rabbitmq_user"),
@@ -136,11 +139,11 @@ func (c *consumerShell) Init() (err error) {
 		Vhost:    viper.GetString("rabbitmq_vhost"),
 		MetaData: nil,
 	})
-	err = newConn.QuickCreateExchange(viper.GetString("rabbitmq_event_exchange_name"), "topic", true)
+	err = c.conn.QuickCreateExchange(viper.GetString("rabbitmq_event_exchange_name"), "topic", true)
 	if err != nil {
 		return
 	}
-	c.publisher, err = newConn.ApplyPublisher(viper.GetString("rabbitmq_event_exchange_name"), []string{
+	c.publisher, err = c.conn.ApplyPublisher(viper.GetString("rabbitmq_event_exchange_name"), []string{
 		"event",
 	})
 	if err != nil {
@@ -307,6 +310,44 @@ func (c *consumerShell) RobotChatJoin(msg amqp.Delivery) {
 		Logger.Info("process success", zap.String("queue", "uchat.robot.chat.join"), zap.Any("msg", msg))
 		msg.Ack(false)
 	}
+}
+
+func (c *consumerShell) SendChatMessage(name string) {
+	queue := c.conn.ApplyQueue(name)
+	err := queue.Ensure([]*rmqtool.QueueBind{
+		&rmqtool.QueueBind{
+			Key:       "uchat.mysql.message.queue", // old
+			Exchange:  viper.GetString("rabbitmq_message_exchange_name"),
+			Arguments: nil,
+		},
+		&rmqtool.QueueBind{
+			Key:       "uchat.chat.message.#", // new
+			Exchange:  viper.GetString("rabbitmq_message_exchange_name"),
+			Arguments: nil,
+		},
+	})
+	if err != nil {
+		Logger.Fatal(name+" error", zap.Error(err))
+	}
+	queue.Consume(20, func(msg amqp.Delivery) {
+		var rst map[string]interface{}
+		err := json.Unmarshal(msg.Body, &rst)
+		log.Fatal(rst, err)
+		if err != nil {
+			Logger.Error("process error json unmarshal", zap.String("queue", name), zap.Error(err), zap.Any("msg", msg))
+			msg.Ack(false)
+		} else {
+			err := c.client.SendMessage(rst)
+			if err != nil {
+				Logger.Error("process error send error", zap.String("queue", name), zap.Error(err), zap.Any("msg", msg))
+				//msg.Nack(false, true)
+				msg.Ack(false)
+			} else {
+				Logger.Error("process success", zap.String("queue", name), zap.Error(err), zap.Any("msg", msg))
+				msg.Ack(false)
+			}
+		}
+	})
 }
 
 func init() {

@@ -27,6 +27,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
+	rmqtool "github.com/lvzhihao/go-rmqtool"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/apis"
@@ -66,7 +67,7 @@ var apiCmd = &cobra.Command{
 			[]string{"uchat.mysql.message.queue"},
 		)
 		if err != nil {
-			Logger.Error("RabbitMQ Connect Error", zap.Error(err))
+			Logger.Fatal("RabbitMQ Connect Error", zap.Error(err))
 		}
 		utils.Logger = Logger
 		apis.Logger = Logger
@@ -85,6 +86,27 @@ var apiCmd = &cobra.Command{
 			MerchantNo:     viper.GetString("chatbot_merchant_no"),
 			MerchantSecret: viper.GetString("chatbot_merchant_secret"),
 		})
+
+		// publish
+		conn := rmqtool.NewConnect(rmqtool.ConnectConfig{
+			Host:     viper.GetString("rabbitmq_host"),
+			Api:      viper.GetString("rabbitmq_api"),
+			User:     viper.GetString("rabbitmq_user"),
+			Passwd:   viper.GetString("rabbitmq_passwd"),
+			Vhost:    viper.GetString("rabbitmq_vhost"),
+			MetaData: nil,
+		})
+		err = conn.QuickCreateExchange(viper.GetString("rabbitmq_message_exchange_name"), "topic", true)
+		if err != nil {
+			Logger.Fatal("create message exchange error", zap.Error(err))
+		}
+		apis.MessagePublisher, err = conn.ApplyPublisher(viper.GetString("rabbitmq_message_exchange_name"), []string{
+			"uchat.chat.message",    // 群聊队列
+			"uchat.private.message", // 私聊队列
+		})
+		if err != nil {
+			Logger.Fatal("message publisher error", zap.Error(err))
+		}
 
 		// check api v2 backend token
 		app.Use(CheckBackendToken)

@@ -14,11 +14,14 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
+	rmqtool "github.com/lvzhihao/go-rmqtool"
 	"github.com/lvzhihao/goutils"
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/chatbot"
 	"github.com/lvzhihao/zhiya/models"
 	"github.com/lvzhihao/zhiya/uchat"
+	"github.com/spf13/viper"
+	"github.com/streadway/amqp"
 )
 
 var (
@@ -30,6 +33,7 @@ var (
 	}
 	AmrConvertServer string = "http://127.0.0.1:8299"
 	ChatBotClient    *chatbot.Client
+	MessagePublisher *rmqtool.PublisherTool
 )
 
 type ReturnType struct {
@@ -60,7 +64,23 @@ func ReturnData(ctx echo.Context, data interface{}) error {
 }
 
 func SendMessageV2(ctx echo.Context) error {
-	return SendMessage(ctx)
+	var rst map[string]interface{}
+	err := json.Unmarshal([]byte(ctx.FormValue("context")), &rst)
+	if err != nil {
+		return ReturnError(ctx, "100051", err)
+	}
+	// 补充商户号和发送流水号
+	rst["MerchantNo"] = viper.GetString("merchant_no")
+	rst["vcRelaSerialNo"] = "api-" + goutils.RandomString(20)
+	b, _ := json.Marshal(rst)
+	ext := fmt.Sprintf(".%s.%s", rst["MerchantNo"], rst["vcRobotSerialNo"])
+	MessagePublisher.PublishExt("uchat.chat.message", ext, amqp.Publishing{
+		DeliveryMode: amqp.Persistent,
+		Timestamp:    time.Now(),
+		ContentType:  "application/json",
+		Body:         b,
+	})
+	return ReturnData(ctx, "success")
 }
 
 func OverChatRoomV2(ctx echo.Context) error {

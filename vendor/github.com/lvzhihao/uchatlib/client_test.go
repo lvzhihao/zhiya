@@ -7,12 +7,14 @@ import (
 	"github.com/lvzhihao/goutils"
 )
 
-var testClient *UchatClient
-var testRobot map[string]string
-var testChatRooms []map[string]string
+var (
+	testClient    *UchatClient
+	testRobot     map[string]string
+	testChatRooms []map[string]string
 
-var testMarchantNo string
-var testMmarchantSecret string
+	testMarchantNo      string
+	testMmarchantSecret string
+)
 
 func init() {
 	flag.StringVar(&testMarchantNo, "no", "", "marchantNo")
