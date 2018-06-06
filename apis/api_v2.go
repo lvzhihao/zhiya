@@ -450,14 +450,20 @@ func AmrConver(ctx echo.Context) error {
 func UpdateChatRoomRobotNickName(ctx echo.Context) error {
 	chatRoomSerialNo := ctx.FormValue("chat_room_serial_no")
 	nickName := ctx.FormValue("nick_name")
+	if chatRoomSerialNo == "" {
+		return ReturnError(ctx, "100040", fmt.Errorf("chat_room_serial_no is empty"))
+	}
+	if nickName == "" {
+		return ReturnError(ctx, "100041", fmt.Errorf("nick_name is empty"))
+	}
 	err := Client.ChatRoomRobotNickNameModify(map[string]string{
 		"vcChatRoomSerialNo": chatRoomSerialNo,
 		"vcNickName":         nickName,
 	})
 	if err != nil {
-		return ReturnError(ctx, "100040", err)
+		return ReturnError(ctx, "100042", err)
 	} else {
-		return ReturnData(ctx, nil)
+		return ReturnData(ctx, "success")
 	}
 }
 
