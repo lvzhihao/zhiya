@@ -23,7 +23,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"go.uber.org/zap"
 
@@ -332,7 +331,6 @@ func (c *consumerShell) SendChatMessage(name string) {
 	queue.Consume(20, func(msg amqp.Delivery) {
 		var rst map[string]interface{}
 		err := json.Unmarshal(msg.Body, &rst)
-		log.Fatal(rst, err)
 		if err != nil {
 			Logger.Error("process error json unmarshal", zap.String("queue", name), zap.Error(err), zap.Any("msg", msg))
 			msg.Ack(false)
