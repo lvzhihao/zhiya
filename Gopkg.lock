@@ -87,7 +87,7 @@
   branch = "master"
   name = "github.com/lvzhihao/go-rmqtool"
   packages = ["."]
-  revision = "9b05407c6c37d349f383aec10d64afb5484d488e"
+  revision = "39326d406b519cbdfc31213f950962b428841936"
 
 [[projects]]
   branch = "master"

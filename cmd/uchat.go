@@ -328,7 +328,7 @@ func (c *consumerShell) SendChatMessage(name string) {
 	if err != nil {
 		Logger.Fatal(name+" error", zap.Error(err))
 	}
-	queue.Consume(20, func(msg amqp.Delivery) {
+	queue.Consume(1, func(msg amqp.Delivery) {
 		var rst map[string]interface{}
 		err := json.Unmarshal(msg.Body, &rst)
 		if err != nil {

@@ -1,6 +1,7 @@
 package rmqtool
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,7 +55,7 @@ func (c *ConsumerTool) SetName(name string) string {
 	return c.Name()
 }
 
-func (c *ConsumerTool) Link(prefetchCount int) (<-chan amqp.Delivery, error) {
+func (c *ConsumerTool) Link(prefetchCount int) (*amqp.Channel, error) {
 	var err error
 	c.conn, err = amqp.Dial(c.amqpUrl)
 	if err != nil {
@@ -72,12 +73,7 @@ func (c *ConsumerTool) Link(prefetchCount int) (<-chan amqp.Delivery, error) {
 		c.conn.Close()
 		return nil, err
 	}
-	deliveries, err := channel.Consume(c.queue, GenerateConsumerName(c.name), false, false, false, false, nil)
-	if err != nil {
-		c.conn.Close()
-		return nil, err
-	}
-	return deliveries, nil
+	return channel, nil
 }
 
 func (c *ConsumerTool) Close() {
@@ -90,7 +86,7 @@ func (c *ConsumerTool) Close() {
 	}
 }
 
-func (c *ConsumerTool) Consume(prefetchCount int, handle func(amqp.Delivery)) {
+func (c *ConsumerTool) Consume(nums int, handle func(amqp.Delivery)) {
 	defer c.Close()
 	for {
 		if c.isClosed == true {
@@ -98,22 +94,43 @@ func (c *ConsumerTool) Consume(prefetchCount int, handle func(amqp.Delivery)) {
 			break
 		}
 		time.Sleep(c.RetryTime)
-		deliveries, err := c.Link(prefetchCount)
+		channel, err := c.Link(20)
 		if err != nil {
-			Log.Error("Consumer Link Error", err)
+			Log.Error("Channel Link Error", err)
 			continue
 		}
-		for msg := range deliveries {
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						Log.Error("Consumer Recover", r)
-					}
-				}()
-				handle(msg)
-			}()
+		quitSingle := make(chan string, nums)
+		for i := 0; i < nums; i++ {
+			go c.Process(channel, GenerateConsumerName(c.name+"."+strconv.Itoa(i)), quitSingle, handle)
 		}
+		<-quitSingle
 		c.conn.Close()
 		Log.Debug("Consumer ReConnection After RetryTime", c.RetryTime)
+	}
+}
+
+func (c *ConsumerTool) Process(channel *amqp.Channel, consumerName string, quitSingle chan string, handle func(amqp.Delivery)) {
+	defer func() {
+		if r := recover(); r != nil {
+			Log.Error("Consumer Handle Recover", r)
+		}
+		// retry consumer
+		if quitSingle != nil {
+			quitSingle <- "quit"
+		}
+	}()
+	// consume process
+	deliveries, err := channel.Consume(c.queue, consumerName, false, false, false, false, nil)
+	if err != nil {
+		Log.Error("Consumer Link Error", err)
+		if quitSingle != nil {
+			quitSingle <- "quit"
+		}
+		return
+	}
+	// todo prefectchCount used
+	for msg := range deliveries {
+		// process handle
+		handle(msg)
 	}
 }
