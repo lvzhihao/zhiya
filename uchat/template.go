@@ -223,7 +223,11 @@ func ApplyChatRoomTemplate(db *gorm.DB, myId, subId, workTemplateId string, chat
 		// 使用老的处理方式
 		var realRooms []models.RobotChatRoom
 		//todo fix expires time
-		err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("is_open = ?", true).Where("chat_room_serial_no IN (?)", chatRoomList).Find(&realRooms).Error
+		if subId != "" {
+			err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("is_open = ?", true).Where("chat_room_serial_no IN (?)", chatRoomList).Find(&realRooms).Error
+		} else {
+			err = db.Where("my_id = ?", myId).Where("is_open = ?", true).Where("chat_room_serial_no IN (?)", chatRoomList).Find(&realRooms).Error
+		}
 		if err != nil {
 			return
 		}
@@ -376,7 +380,8 @@ func GetChatRoomValidTemplate(db *gorm.DB, chat_room_serial_no, cmd_type string)
 	err = db.Where("chat_room_serial_no = ?", robotChatRoom.ChatRoomSerialNo).Where("cmd_type = ?", cmd_type).First(&ct).Error
 	if err == nil && ct.WorkTemplateId != "" {
 		// 关联模板是否为群当前所属商家并且运营模板当前为开启
-		err = db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("status = ?", 0).First(&data).Error
+		//err = db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("status = ?", 0).First(&data).Error
+		err = db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("status = ?", 0).First(&data).Error
 		if err == nil {
 			return
 		}
