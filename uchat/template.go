@@ -387,6 +387,7 @@ func GetChatRoomValidTemplate(db *gorm.DB, chat_room_serial_no, cmd_type string)
 		}
 	}
 	// 读取前当商家关联类型默认模板并已经开启
-	err = db.Where("cmd_type = ?", cmd_type).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("is_default = ?", true).Where("status = ?", 0).First(&data).Error
+	//err = db.Where("cmd_type = ?", cmd_type).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("is_default = ?", true).Where("status = ?", 0).First(&data).Error
+	err = db.Where("cmd_type = ?", cmd_type).Where("my_id = ?", robotChatRoom.MyId).Where("is_default = ?", true).Where("status = ?", 0).First(&data).Error
 	return
 }
