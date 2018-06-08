@@ -487,6 +487,22 @@ func UpdateChatRoomRobotNickName(ctx echo.Context) error {
 	}
 }
 
+func GetChatRoomInfo(ctx echo.Context) error {
+	params := ctx.QueryParams()
+	chatRoomSerialNoList := params.Get("chat_room_serial_no_list")
+	if chatRoomSerialNoList == "" {
+		return ReturnError(ctx, "100044", fmt.Errorf("chat_room_serial_no_list is empty"))
+	}
+	ids := strings.Split(chatRoomSerialNoList, ",")
+	var rst []models.ChatRoom
+	err := DB.Where("chat_room_serial_no IN (?)", ids).Find(&rst).Error
+	if err != nil {
+		return ReturnError(ctx, "100045", err)
+	} else {
+		return ReturnData(ctx, rst)
+	}
+}
+
 func pageParam(input interface{}, def int) (num int) {
 	num = int(goutils.ToInt32(input))
 	if num == 0 {

@@ -105,6 +105,7 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 			db.Save(&chatRoom)
 		} // update chatroomId
 		chatRoom.ApplyMemberCount(db) // update memberCount
+		go UpdateChatRoomHeadImage(db, chatRoom.ChatRoomSerialNo)
 	}
 	return nil
 }

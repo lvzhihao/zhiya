@@ -30,6 +30,7 @@ type ChatRoom struct {
 	QrCodeExpiredDate time.Time `json:"qr_code_expired_date"`                             //群二维码失效时间
 	ChatRoomId        string    `gorm:"size:100" json:"chat_room_id"`                     //微信原生ID
 	MemberCount       int32     `gorm:"default:0" json:"member_count"`                    //群有效人数
+	HeadImage         string    `gorm:"varchar(500)" json:"head_image"`                   // 群头像
 }
 
 /*

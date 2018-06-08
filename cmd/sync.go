@@ -191,6 +191,29 @@ var syncCmd = &cobra.Command{
 					sugar.Infof("create new qrcode success: %s\n", room.ChatRoomSerialNo)
 				}
 			}
+		case "chatheadimage":
+			rows, err := db.Model(&models.ChatRoom{}).Select("chat_room_serial_no").Where("status = ?", 10).Rows()
+			if err != nil {
+				sugar.Fatal(err)
+			}
+			defer rows.Close()
+			num := 0
+			for rows.Next() {
+				var no string
+				err := rows.Scan(&no)
+				if err != nil {
+					sugar.Error(err)
+				} else {
+					ret, err := uchat.UpdateChatRoomHeadImage(db, no)
+					if err != nil {
+						sugar.Error(err)
+					} else {
+						sugar.Infof("members sync success: %s - %s, %s\n", ret.Name, ret.ChatRoomSerialNo, ret.HeadImage)
+					}
+				}
+				num++
+			}
+			sugar.Infof("count: %d", num)
 		default:
 			sugar.Warn("only support robot/chat/member/chatstatus/chatmembers")
 		}

@@ -32,6 +32,7 @@ import (
 	"github.com/lvzhihao/uchatlib"
 	"github.com/lvzhihao/zhiya/apis"
 	"github.com/lvzhihao/zhiya/chatbot"
+	"github.com/lvzhihao/zhiya/uchat"
 	"github.com/lvzhihao/zhiya/utils"
 	prism "github.com/shopex/prism-go"
 	"github.com/spf13/cobra"
@@ -111,6 +112,20 @@ var apiCmd = &cobra.Command{
 		// check api v2 backend token
 		app.Use(CheckBackendToken)
 
+		// chatroom head image dev
+		app.GET("/dev/chatroom/headimage/:no/:limit", func(ctx echo.Context) error {
+			charRoomSerialNo := ctx.Param("no")
+			limit := ctx.Param("limit")
+			if charRoomSerialNo == "" {
+				return ctx.NoContent(http.StatusOK)
+			}
+			ir, err := uchat.GetChatRoomHeadImage(db, charRoomSerialNo, int(goutils.ToInt(limit)))
+			if err != nil {
+				return ctx.NoContent(http.StatusOK)
+			}
+			return ctx.Stream(http.StatusOK, "image/jpg", ir)
+		})
+
 		// action
 		app.POST("/api/ping", func(ctx echo.Context) error {
 			return ctx.String(http.StatusOK, "pong")
@@ -146,6 +161,7 @@ var apiCmd = &cobra.Command{
 		app.GET("/api/v2/amr/convert", apis.AmrConver)
 		app.POST("/api/v2/robot/chatroom/nickname", apis.UpdateChatRoomRobotNickName)
 		app.POST("/api/v2/applycode", apis.ApplyCode)
+		app.GET("/api/v2/chatroom/info", apis.GetChatRoomInfo)
 		// graceful shutdown
 		goutils.EchoStartWithGracefulShutdown(app, ":8079")
 	},
