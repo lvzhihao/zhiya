@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	DefaultChatRoomHeadImageBackgroundColor color.RGBA = color.RGBA{200, 200, 200, 0}
+	DefaultChatRoomHeadImageBackgroundColor color.RGBA = color.RGBA{218, 218, 218, 0}
 	DefaultChatRoomHeadSizeUnit             int        = 132
 	DefaultChatRoomHeadPadding              int        = 3
 )
