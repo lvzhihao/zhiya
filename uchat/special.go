@@ -22,9 +22,9 @@ import (
 )
 
 var (
-	DefaultChatRoomHeadImageBackgroundColor color.RGBA = color.RGBA{218, 218, 218, 0}
+	DefaultChatRoomHeadImageBackgroundColor color.RGBA = color.RGBA{222, 222, 222, 0}
 	DefaultChatRoomHeadSizeUnit             int        = 132
-	DefaultChatRoomHeadPadding              int        = 3
+	DefaultChatRoomHeadPadding              int        = 12
 )
 
 func UpdateChatRoomHeadImage(db *gorm.DB, chatRoomSerialNo string) (*models.ChatRoom, error) {
@@ -203,9 +203,13 @@ func (c *HeadImage) writeImages() (image.Rectangle, error) {
 	case 0:
 		return image.Rectangle{}, fmt.Errorf("images nums error")
 	case 1:
-		return image.Rectangle{}, fmt.Errorf("images nums error")
+		rectangle := c.rectangle_2()
+		c.writeImage_1()
+		return rectangle, nil
 	case 2:
-		return image.Rectangle{}, fmt.Errorf("images nums error")
+		rectangle := c.rectangle_2()
+		c.writeImage_2()
+		return rectangle, nil
 	case 3:
 		rectangle := c.rectangle_2()
 		c.writeImage_3()
@@ -259,13 +263,41 @@ func (c *HeadImage) rectangle_3() image.Rectangle {
 	return rectangle
 }
 
+func (c *HeadImage) writeImage_1() {
+	// write
+	bounds := c.images[0].Bounds()
+	var xP, yP int
+	xP = c.padding + (c.size+c.padding)/2
+	yP = c.padding + (c.size+c.padding)/2
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			c.board.Set(x+xP, y+yP, c.images[0].At(x, y))
+		}
+	}
+}
+
+func (c *HeadImage) writeImage_2() {
+	// write
+	for i, img := range c.images[0:2] {
+		bounds := img.Bounds()
+		var xP, yP int
+		xP = i%2*(c.size+c.padding) + c.padding
+		yP = c.padding + (c.size+c.padding)/2
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+				c.board.Set(x+xP, y+yP, img.At(x, y))
+			}
+		}
+	}
+}
+
 func (c *HeadImage) writeImage_3() {
 	// write
 	for i, img := range c.images[0:3] {
 		bounds := img.Bounds()
 		var xP, yP int
 		if i == 0 {
-			xP = i%2*(c.size+c.padding) + c.padding + c.size/2
+			xP = i%2*(c.size+c.padding) + c.padding + (c.size+c.padding)/2
 			yP = (i/2)*(c.size+c.padding) + c.padding
 		} else {
 			xP = (i+1)%2*(c.size+c.padding) + c.padding
@@ -299,11 +331,11 @@ func (c *HeadImage) writeImage_5() {
 		bounds := img.Bounds()
 		var xP, yP int
 		if i < 2 {
-			xP = i%3*(c.size+c.padding) + c.padding + c.size/2
-			yP = (i/3)*(c.size+c.padding) + c.padding + c.size/2
+			xP = i%3*(c.size+c.padding) + c.padding + (c.size+c.padding)/2
+			yP = (i/3)*(c.size+c.padding) + c.padding + (c.size+c.padding)/2
 		} else {
 			xP = (i+1)%3*(c.size+c.padding) + c.padding
-			yP = ((i+1)/3)*(c.size+c.padding) + c.padding + c.size/2
+			yP = ((i+1)/3)*(c.size+c.padding) + c.padding + (c.size+c.padding)/2
 		}
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -319,7 +351,7 @@ func (c *HeadImage) writeImage_6() {
 		bounds := img.Bounds()
 		var xP, yP int
 		xP = i%3*(c.size+c.padding) + c.padding
-		yP = (i/3)*(c.size+c.padding) + c.padding + c.size/2
+		yP = (i/3)*(c.size+c.padding) + c.padding + (c.size+c.padding)/2
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 				c.board.Set(x+xP, y+yP, img.At(x, y))
@@ -334,7 +366,7 @@ func (c *HeadImage) writeImage_7() {
 		bounds := img.Bounds()
 		var xP, yP int
 		if i < 1 {
-			xP = i%3*(c.size+c.padding) + c.padding + c.size
+			xP = i%3*(c.size+c.padding) + c.padding + c.size + c.padding
 			yP = (i/3)*(c.size+c.padding) + c.padding
 		} else {
 			xP = (i+2)%3*(c.size+c.padding) + c.padding
@@ -354,7 +386,7 @@ func (c *HeadImage) writeImage_8() {
 		bounds := img.Bounds()
 		var xP, yP int
 		if i < 2 {
-			xP = i%3*(c.size+c.padding) + c.padding + c.size/2
+			xP = i%3*(c.size+c.padding) + c.padding + (c.size+c.padding)/2
 			yP = (i/3)*(c.size+c.padding) + c.padding
 		} else {
 			xP = (i+1)%3*(c.size+c.padding) + c.padding
