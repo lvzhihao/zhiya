@@ -358,7 +358,8 @@ func GetChatRoomValidTemplates(db *gorm.DB, chat_room_serial_no, cmd_type string
 	}
 	for _, ct := range cts {
 		var temp models.WorkTemplate
-		errr := db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("status = ?", 0).First(&temp).Error
+		//errr := db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("sub_id = ?", robotChatRoom.SubId).Where("status = ?", 0).First(&temp).Error
+		errr := db.Where("work_template_id = ?", ct.WorkTemplateId).Where("my_id = ?", robotChatRoom.MyId).Where("status = ?", 0).First(&temp).Error
 		if errr != nil {
 			continue
 		}
