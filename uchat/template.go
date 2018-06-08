@@ -181,7 +181,11 @@ func CountWorkTemplateChatRoom(db *gorm.DB, myId, subId, cmdType string) error {
 
 func ApplyChatRoomTemplate(db *gorm.DB, myId, subId, workTemplateId string, chatRoomList []string) (data interface{}, err error) {
 	ret := &models.WorkTemplate{}
-	err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Where("work_template_id = ?", workTemplateId).First(ret).Error
+	if subId != "" {
+		err = db.Where("my_id = ?", myId).Where("sub_id = ?", subId).Where("status IN (?)", []int8{0, 1}).Where("work_template_id = ?", workTemplateId).First(ret).Error
+	} else {
+		err = db.Where("my_id = ?", myId).Where("status IN (?)", []int8{0, 1}).Where("work_template_id = ?", workTemplateId).First(ret).Error
+	}
 	if err != nil {
 		return
 	}
