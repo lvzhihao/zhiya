@@ -11,3 +11,9 @@ type ChatRoomTag struct {
 	Count    int32  `json:"count"`                                //个数
 	IsActive bool   `gorm:"index:idx_is_active" json:"is_active"` //是否启用
 }
+
+func GetChatRoomTagByMyId(db *gorm.DB, my_id string) (rst []ChatRoomTag, err error) {
+	rst = make([]ChatRoomTag, 0)
+	err = db.Where("my_id = ?", my_id).Where("is_active = ?", true).Find(&rst).Error
+	return
+}

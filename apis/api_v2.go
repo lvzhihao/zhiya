@@ -332,6 +332,16 @@ func SetWorkTemplateDefault(ctx echo.Context) error {
 	}
 }
 
+func GetChatRoomTag(ctx echo.Context) error {
+	myId := ctx.FormValue("my_id")
+	ret, err := models.GetChatRoomTagByMyId(DB, myId)
+	if err != nil {
+		return ReturnError(ctx, "100060", err)
+	} else {
+		return ReturnData(ctx, ret)
+	}
+}
+
 func CmdTypeList(ctx echo.Context) error {
 	list, err := uchat.ListCmdType(DB)
 	if err != nil {
