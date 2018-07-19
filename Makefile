@@ -26,3 +26,8 @@ docker-ali:
 	sudo docker tag edwinlll/zhiya:latest registry.cn-hangzhou.aliyuncs.com/weishangye/zhiya:latest
 	sudo docker push registry.cn-hangzhou.aliyuncs.com/weishangye/zhiya:latest
 	sudo docker rmi registry.cn-hangzhou.aliyuncs.com/weishangye/zhiya:latest
+
+docker-wdwd:
+	sudo docker tag edwinlll/zhiya:latest docker.wdwd.com/wxsq/zhiya:latest
+	sudo docker push docker.wdwd.com/wxsq/zhiya:latest
+	sudo docker rmi docker.wdwd.com/wxsq/zhiya:latest

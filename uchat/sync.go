@@ -81,6 +81,7 @@ func SyncRobots(client *uchatlib.UchatClient, db *gorm.DB) error {
 		robot.HeadImages = v["vcHeadImages"]
 		robot.CodeImages = v["vcCodeImages"]
 		robot.Status = goutils.ToInt32(v["nStatus"])
+		robot.Used = true
 		err = db.Save(&robot).Error
 		log.Printf("%+v\n", robot)
 		if err != nil {
