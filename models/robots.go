@@ -105,6 +105,10 @@ func FindValidCodeRobotByMyId(db *gorm.DB, myId string, limit int) (list []Robot
 		return robots, err
 	}
 	for _, r := range robots {
+		if r.Status != 10 {
+			// 如果状态为异常，则忽略
+			continue
+		}
 		count := 0
 		//limit used / day
 		db.Model(&RobotApplyCode{}).Where("robot_serial_no = ?", r.SerialNo).Where("used = ?", 1).Where("DATE(created_at) = CURDATE()").Count(&count)
