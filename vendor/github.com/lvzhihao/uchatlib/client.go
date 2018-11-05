@@ -207,8 +207,24 @@ func (c *UchatClient) ScanGlobalResultList(key string, data []byte, err error) (
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, &ret)
-	return ret, err
+	// 小U改了接口返回值，区分string和int了，这里统计转换成string，兼容方法
+	// start
+	var ret1 []map[string]interface{}
+	err = json.Unmarshal(b, &ret1)
+	if err != nil {
+		return nil, err
+	}
+	for _, data := range ret1 {
+		tmp := make(map[string]string, 0)
+		for k, v := range data {
+			tmp[k] = goutils.ToString(v)
+		}
+		ret = append(ret, tmp)
+	}
+	return ret, nil
+	// end
+	//err = json.Unmarshal(b, &ret)
+	//return ret, err
 }
 
 // 获取机器人列表接口
