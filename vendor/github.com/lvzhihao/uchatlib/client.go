@@ -207,24 +207,8 @@ func (c *UchatClient) ScanGlobalResultList(key string, data []byte, err error) (
 	if err != nil {
 		return nil, err
 	}
-	// 小U改了接口返回值，区分string和int了，这里统计转换成string，兼容方法
-	// start
-	var ret1 []map[string]interface{}
-	err = json.Unmarshal(b, &ret1)
-	if err != nil {
-		return nil, err
-	}
-	for _, data := range ret1 {
-		tmp := make(map[string]string, 0)
-		for k, v := range data {
-			tmp[k] = goutils.ToString(v)
-		}
-		ret = append(ret, tmp)
-	}
-	return ret, nil
-	// end
-	//err = json.Unmarshal(b, &ret)
-	//return ret, err
+	err = json.Unmarshal(b, &ret)
+	return ret, err
 }
 
 // 获取机器人列表接口
@@ -315,12 +299,12 @@ func (c *UchatClient) ChatRoomInfoModify(ctx map[string]string) error {
 
 // 查询群状态接口
 // 商家通过机器人提供的“查询群状态的接口”可以实时的知道所需要知道群的状态和机器人状态，也就是目前群是否还存在，机器人是否还工作。
-func (c *UchatClient) ChatRoomStatus(ctx map[string]string) (map[string]string, error) {
+func (c *UchatClient) ChatRoomStatus(ctx map[string]string) (map[string]interface{}, error) {
 	b, err := c.Action("ChatRoomStatus", ctx)
 	if err != nil {
 		return nil, err
 	} else {
-		var rst map[string]string
+		var rst map[string]interface{}
 		err := json.Unmarshal(b, &rst)
 		return rst, err
 	}
