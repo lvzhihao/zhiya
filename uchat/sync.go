@@ -214,7 +214,7 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, d
 			room.Name = goutils.ToString(rst["vcChatRoomName"])
 			room.Base64Name = base64.StdEncoding.EncodeToString([]byte(room.Name))
 		} else {
-			room.Name = name
+			room.Name = goutils.ToString(name)
 			room.Base64Name = goutils.ToString(rst["vcChatRoomName"])
 		}
 		room.Status = goutils.ToInt32(rst["nStatus"])
