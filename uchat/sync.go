@@ -208,8 +208,15 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, d
 				robotChatRoom.Close(db)
 			}
 		}
-		room.Name = goutils.ToString(rst["vcChatRoomName"])
-		room.Base64Name = base64.StdEncoding.EncodeToString([]byte(room.Name))
+		// 判断是否可以base decode
+		name, nerr := base64.StdEncoding.DecodeString(rst["vcChatRoomName"])
+		if nerr != nil {
+			room.Name = goutils.ToString(rst["vcChatRoomName"])
+			room.Base64Name = base64.StdEncoding.EncodeToString([]byte(room.Name))
+		} else {
+			room.Name = name
+			room.Base64Name = goutils.ToString(rst["vcChatRoomName"])
+		}
 		room.Status = goutils.ToInt32(rst["nStatus"])
 		room.RobotInStatus = goutils.ToInt32(rst["nRobotInStatus"])
 		room.RobotSerialNo = goutils.ToString(rst["vcRobotSerialNo"])
