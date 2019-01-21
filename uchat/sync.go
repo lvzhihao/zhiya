@@ -65,21 +65,21 @@ func SyncRobots(client *uchatlib.UchatClient, db *gorm.DB) error {
 	for _, v := range rst {
 		// ensure robot
 		robot := models.Robot{}
-		err := robot.Ensure(db, v["vcSerialNo"])
+		err := robot.Ensure(db, goutils.ToString(v["vcSerialNo"]))
 		if err != nil {
 			return err
 		}
 		robot.WxId = goutils.ToString(v["vcWxAlias"])
 		robot.ChatRoomCount = goutils.ToInt32(v["nChatRoomCount"])
-		nickNameB, err := base64.StdEncoding.DecodeString(v["vcBase64NickName"])
+		nickNameB, err := base64.StdEncoding.DecodeString(goutils.ToString(v["vcBase64NickName"]))
 		if err != nil {
 			robot.NickName = goutils.ToString(v["vcNickName"])
 		} else {
 			robot.NickName = goutils.ToString(nickNameB)
 		}
-		robot.Base64NickName = v["vcBase64NickName"]
-		robot.HeadImages = v["vcHeadImages"]
-		robot.CodeImages = v["vcCodeImages"]
+		robot.Base64NickName = goutils.ToString(v["vcBase64NickName"])
+		robot.HeadImages = goutils.ToString(v["vcHeadImages"])
+		robot.CodeImages = goutils.ToString(v["vcCodeImages"])
 		robot.Status = goutils.ToInt32(v["nStatus"])
 		robot.Used = true
 		err = db.Save(&robot).Error

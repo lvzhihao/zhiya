@@ -211,11 +211,35 @@ func (c *UchatClient) ScanGlobalResultList(key string, data []byte, err error) (
 	return ret, err
 }
 
+// 审查全局返回结果
+func (c *UchatClient) ScanGlobalResultListV2(key string, data []byte, err error) ([]map[string]interface{}, error) {
+	if err != nil {
+		return nil, err
+	}
+	var rst UchatClientGlobalResultList
+	err = json.Unmarshal(data, &rst)
+	if err != nil {
+		return nil, err
+	}
+	var ret []map[string]interface{}
+	if _, ok := rst[key]; !ok {
+		//return nil, errors.New(key + " not found")
+		return ret, nil //无返回值
+	}
+	var b []byte
+	b, err = json.Marshal(rst[key])
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, &ret)
+	return ret, err
+}
+
 // 获取机器人列表接口
 // 可通过该接口获取所购买的机器人列表，包含机器人编号，头像、昵称、状态、已开通群数等。
-func (c *UchatClient) RobotList() ([]map[string]string, error) {
+func (c *UchatClient) RobotList() ([]map[string]interface{}, error) {
 	b, err := c.Action("RobotList", nil)
-	return c.ScanGlobalResultList("RobotInfo", b, err)
+	return c.ScanGlobalResultListV2("RobotInfo", b, err)
 }
 
 // 查询机器人已开通群接口
