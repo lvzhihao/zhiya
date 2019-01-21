@@ -209,7 +209,7 @@ func SyncChatRoomStatus(chatRoomSerialNo string, client *uchatlib.UchatClient, d
 			}
 		}
 		// 判断是否可以base decode
-		name, nerr := base64.StdEncoding.DecodeString(rst["vcChatRoomName"])
+		name, nerr := base64.StdEncoding.DecodeString(goutils.ToString(rst["vcChatRoomName"]))
 		if nerr != nil {
 			room.Name = goutils.ToString(rst["vcChatRoomName"])
 			room.Base64Name = base64.StdEncoding.EncodeToString([]byte(room.Name))
