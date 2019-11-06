@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,9 +19,10 @@ import (
 )
 
 var (
-	UchatApiPrefix                     string         = "http://skyagent.shequnguanjia.com/Merchant.asmx" //接口地址
-	UchatTimeZone                      string         = "Asia/Shanghai"                                   //时区设置
-	UchatTimeLocation                  *time.Location                                                     //当前时区
+	//UchatApiPrefix                     string         = "http://skyagent.shequnguanjia.com/Merchant.asmx" //接口地址
+	UchatApiPrefix                     string         = "https://skyagent.evmai.cn:8081/Merchant.asmx" //接口地址
+	UchatTimeZone                      string         = "Asia/Shanghai"                                //时区设置
+	UchatTimeLocation                  *time.Location                                                  //当前时区
 	DefaultTransportInsecureSkipVerify bool           = true
 	DefaultTransportDisableCompression bool           = true
 )
@@ -192,6 +194,7 @@ func (c *UchatClient) ScanGlobalResultList(key string, data []byte, err error) (
 	if err != nil {
 		return nil, err
 	}
+	log.Println(string(data))
 	var rst UchatClientGlobalResultList
 	err = json.Unmarshal(data, &rst)
 	if err != nil {

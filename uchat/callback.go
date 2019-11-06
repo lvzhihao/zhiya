@@ -80,6 +80,9 @@ func SyncChatRoomMembersCallback(b []byte, db *gorm.DB) error {
 		//member.LastMsgDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtLastMsgDate"]), loc)
 		member.IsActive = true
 		member.JoinDate, _ = time.ParseInLocation("2006/1/2 15:04:05", goutils.ToString(v["dtCreateDate"]), loc)
+		member.IsAdmin = strings.Contains(v["nIsAdmin"], "1")
+		member.IsRobot = strings.Contains(v["nIsRobot"], "1")
+		member.IsManager = strings.Contains(v["nIsManager"], "1")
 		err = db.Save(&member).Error
 		if err != nil {
 			return err

@@ -25,6 +25,9 @@ type ChatRoomMember struct {
 	JoinDate             time.Time `json:"join_date"`                                                 //入群时间
 	QuitDate             time.Time `json:"quit_date"`                                                 //退群时间
 	IsActive             bool      `gorm:"index:idx_is_active" json:"is_active"`                      //是否活跃
+	IsAdmin              bool      `json:"is_admin"`
+	IsRobot              bool      `json:"is_robot"`
+	IsManager            bool      `json:"is_manager"`
 }
 
 /*
